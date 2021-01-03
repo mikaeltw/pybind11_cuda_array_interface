@@ -1,13 +1,13 @@
-#include "../include/pybind11_cuda_array_interface/pybind11_cuda_array_interface.h"
+#include "../../include/pybind11_cuda_array_interface/pybind11_cuda_array_interface.h"
 
-#include <stdio.h>
+#include <iostream>
 
 void send_cupy(pybind11::cuda_array) {
-    std::cout << "Hello" << endl;
+    std::cout << "Hello" << std::endl;
 }
 
-PYBIND11_MODULE(test_cai, module) {
+PYBIND11_MODULE(pybind11_cuda_array_interface_test, module) {
     module.doc() = "Demagnetising factor CUDA library";
 
-    module.def("Send_cupy", &send_cupy);
+    module.def("send_cupy", &send_cupy);
 }
