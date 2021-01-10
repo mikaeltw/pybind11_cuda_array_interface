@@ -68,10 +68,11 @@ message("===============================")
 # include_directories("${CMAKE_CURRENT_SOURCE_DIR}/python_wrapper")
 
 file(GLOB_RECURSE SOURCES "sources/*.cpp")
+file(GLOB_RECURSE CUSOURCES "sources/*.cu")
 file(GLOB_RECURSE HEADERS "sources/*.h")
 
 find_package(pybind11 REQUIRED)
-pybind11_add_module(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${PYTHON})
+pybind11_add_module(${PROJECT_NAME} ${SOURCES} ${CUSOURCES} ${HEADERS} ${PYTHON})
 
 ###########################################
 ###  Apply RELEASE/DEBUG compile flags  ###
