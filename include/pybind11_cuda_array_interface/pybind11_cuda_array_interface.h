@@ -10,6 +10,8 @@
 #pragma once
 
 #include "pybind11/pybind11.h"
+
+#include <sstream>
 #include <cuda_runtime.h>
 
 inline const char *enum_to_string(const cudaError_t &error)
@@ -17,17 +19,20 @@ inline const char *enum_to_string(const cudaError_t &error)
     return cudaGetErrorName(error);
 }
 
-template<typename T>
-inline void die_on_unsuccessful_enum(T result, const char *func, const char *file, int line)
+template <typename T>
+inline void throw_on_unsuccessful_enum(T result, const char *func, const char *file, int line)
 {
     if (result) {
-        fprintf(stderr, "CUDA driver error at %s:%d code=%d(%s) \"%s\" \n",
-                file, line, static_cast<unsigned int>(result), enum_to_string(result), func);
-        exit(EXIT_FAILURE);
+        std::stringstream ss_error;
+        ss_error << "CUDA error at " << file << ":" << line
+                 << " code=" << static_cast<unsigned int>(result) << "(" << enum_to_string(result)
+                 << ") \"" << func << "\"";
+
+        throw std::runtime_error(ss_error.str());
     }
 }
 
-#define cudaCheckErrors(val) die_on_unsuccessful_enum(val, #val, __FILE__, __LINE__)
+#define checkCudaErrors(val) throw_on_unsuccessful_enum(val, #val, __FILE__, __LINE__)
 
 class PythonException : public std::exception {
     public:
