@@ -12,11 +12,13 @@
 #include "pybind11/pybind11.h"
 
 #include <sstream>
-#include <cuda_runtime.h>
+#include <cuda.h>
 
-inline const char *enum_to_string(const cudaError_t &error)
+inline const char *enum_to_string(const CUresult& error)
 {
-    return cudaGetErrorName(error);
+    const char *ret = nullptr;
+    cuGetErrorName(error, &ret);
+    return ret;
 }
 
 template <typename T>
@@ -63,15 +65,15 @@ int PyObject_CheckCudaArray(PyObject *obj)
 
 namespace pybind11 {
     struct cuda_array_info {
-        void *device_ptr = nullptr;   // Pointer to the underlying storage on device
-        ssize_t itemsize = 0;         // Size of individual items in bytes
-        ssize_t size = 0;             // Total number of entries
-        ssize_t version = 0;          // Version of the cuda_array_interface
+        void *device_ptr{};   // Pointer to the underlying storage on device
+        ssize_t itemsize{};         // Size of individual items in bytes
+        ssize_t size{};             // Total number of entries
+        ssize_t version{};          // Version of the cuda_array_interface
         std::string format;           // For homogeneous buffers, this should be set to format_descriptor<T>::format()
-        ssize_t ndim = 0;             // Number of dimensions
+        ssize_t ndim{};             // Number of dimensions
         std::vector<ssize_t> shape;   // Shape of the tensor (1 entry per dimension)
         std::vector<ssize_t> strides; // Number of bytes between adjacent entries (for each per dimension)
-        bool readonly = false;        // flag to indicate if the underlying storage may be written to
+        bool readonly{false};        // flag to indicate if the underlying storage may be written to
 
         cuda_array_info() = default;
 
@@ -83,7 +85,7 @@ namespace pybind11 {
             void parse_typestr(pybind11::str typestr)
             {
                 auto typestr_cpp = typestr.cast<std::string>();
-                std::string byteorder = typestr_cpp.substr(0,1);
+                std::string byteorder = typestr_cpp.substr(0, 1);
                 format = typestr_cpp.substr(1,1);
                 itemsize = std::stoi(typestr_cpp.substr(2, std::string::npos));
             }
@@ -91,12 +93,11 @@ namespace pybind11 {
             void extract_device_ptr(pybind11::tuple data)
             {
                 readonly = data[1].cast<bool>();
-                device_ptr = reinterpret_cast<void *>(data[0].cast<int64_t>());
-                cudaPointerAttributes attributes;
-                checkCudaErrors(cudaPointerGetAttributes(&attributes, const_cast<const void *>(device_ptr)));
+                CUdeviceptr device_driver_ptr = reinterpret_cast<CUdeviceptr>(data[0].cast<unsigned long long>());
+                checkCudaErrors(cuPointerGetAttribute(&device_ptr, CU_POINTER_ATTRIBUTE_DEVICE_POINTER, device_driver_ptr));
 
-                if (attributes.devicePointer == nullptr || attributes.devicePointer != device_ptr) {
-                    throw std::runtime_error("Illegal device ptr retrieved!");
+                if (device_ptr == nullptr || device_ptr != reinterpret_cast<void *>(device_driver_ptr)) {
+                   throw std::runtime_error("Illegal device ptr retrieved!");
                 }
             }
 

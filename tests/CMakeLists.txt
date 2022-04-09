@@ -47,7 +47,7 @@ message("===============================")
 #############################
 ### Library flags         ###
 #############################
-set(LIBS_OPTIONS -lcurand -lcudadevrt -lcudart -lculibos -lrt)
+set(LIBS_OPTIONS -lcurand -lcudadevrt -lcudart -lculibos -lrt -lcuda)
 
 message(STATUS "LIBS    flags: ${LIBS_OPTIONS}")
 message(STATUS "NVCC    flags: ${CUDA_OPTIONS}")
