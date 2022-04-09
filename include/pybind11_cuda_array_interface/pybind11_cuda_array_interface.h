@@ -93,7 +93,7 @@ namespace pybind11 {
                 readonly = data[1].cast<bool>();
                 device_ptr = reinterpret_cast<void *>(data[0].cast<int64_t>());
                 cudaPointerAttributes attributes;
-                cudaCheckErrors(cudaPointerGetAttributes(&attributes, const_cast<const void *>(device_ptr)));
+                checkCudaErrors(cudaPointerGetAttributes(&attributes, const_cast<const void *>(device_ptr)));
 
                 if (attributes.devicePointer == nullptr || attributes.devicePointer != device_ptr) {
                     throw std::runtime_error("Illegal device ptr retrieved!");
