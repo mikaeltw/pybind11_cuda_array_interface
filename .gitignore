@@ -1,2 +1,5 @@
-*/build/*
-*vscode/*
+build/*
+*.vscode/*
+__pycache__
+*.so
+*.env/*

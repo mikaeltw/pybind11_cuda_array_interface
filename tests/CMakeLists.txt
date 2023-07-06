@@ -1,85 +1,115 @@
+############################################################################
+# Copyright (c) 2021, Mikael Twengström                                    #
+#                                                                          #
+# Distributed under the terms of the XXX.                                  #
+#                                                                          #
+# The full license is in the file LICENSE, distributed with this software. #
+############################################################################
+
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
-project(pybind11_cuda_array_interface_test LANGUAGES CUDA CXX)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake-modules)
-
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ".")
-
-##################################################################
-### Get operating system properties                            ###
-##################################################################
-set(GET_OS_INFO_CMD lsb_release -a)
-execute_process(COMMAND ${GET_OS_INFO_CMD} OUTPUT_VARIABLE OS_PROPERTIES OUTPUT_STRIP_TRAILING_WHITESPACE)
-message("========= DETECTED OS =========")
-message("${OS_PROPERTIES}")
-message("===============================")
-
-include(CheckLanguage)
-if(CMAKE_CUDA_COMPILER)
-    enable_language(CUDA)
-else()
-    message(FATAL_ERROR "No CUDA compiler found")
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    project(pybind11_cuda_array_interface-test)
+    enable_testing()
+    find_package(pybind11_cuda_array_interface REQUIRED CONFIG)
 endif()
 
-set(CMAKE_CXX_VERSION 14)
+message(STATUS "Forcing tests build type to Release")
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
 
-if(NOT DEFINED CMAKE_CUDA_STANDARD)
-    set(CMAKE_CUDA_STANDARD ${CMAKE_CXX_VERSION})
-    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+include(CheckCXXCompilerFlag)
+
+string(TOUPPER "${CMAKE_BUILD_TYPE}" U_CMAKE_BUILD_TYPE)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_CXX_COMPILER_ID MATCHES GNU OR CMAKE_CXX_COMPILER_ID MATCHES Intel)
+    add_compile_options(-Wunused-parameter -Wextra -Wreorder -Wconversion -Wsign-conversion)
+
+    CHECK_CXX_COMPILER_FLAG(-march=native HAS_MARCH_NATIVE)
+    if (HAS_MARCH_NATIVE)
+        add_compile_options(-march=native)
+    endif()
 endif()
 
-set(CMAKE_CXX_STANDARD ${CMAKE_CXX_VERSION})
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+if(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
+    add_compile_options(/EHsc /MP /bigobj)
+    set(CMAKE_EXE_LINKER_FLAGS /MANIFEST:NO)
 endif()
 
-###################
-### Setup flags ###
-###################
-message("CUDA-compiler: ${CMAKE_CUDA_COMPILER_ID} ${CMAKE_CUDA_COMPILER_VERSION}")
-message("CUDA-compiler location: ${CMAKE_CUDA_COMPILER}")
-message("===============================")
+if(DOWNLOAD_GTEST OR GTEST_SRC_DIR)
+    if(DOWNLOAD_GTEST)
+        # Download and unpack googletest at configure time
+        configure_file(gtest/getGTest.cmake.in gtest-get/CMakeLists.txt)
+    else()
+        # Copy local source of googletest at configure time
+        configure_file(gtest/cpGTest.cmake.in gtest-get/CMakeLists.txt)
+    endif()
+    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+                    RESULT_VARIABLE result
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gtest-get )
+    if(result)
+        message(FATAL_ERROR "CMake step for googletest failed: ${result}")
+    endif()
+    execute_process(COMMAND ${CMAKE_COMMAND} --build .
+                    RESULT_VARIABLE result
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gtest-get )
+    if(result)
+        message(FATAL_ERROR "Build step for googletest failed: ${result}")
+    endif()
 
-#############################
-### Library flags         ###
-#############################
-set(LIBS_OPTIONS -lcurand -lcudadevrt -lcudart -lculibos -lrt -lcuda)
+    # Add googletest directly to our build. This defines
+    # the gtest and gtest_main targets.
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/gtest-src
+                     ${CMAKE_CURRENT_BINARY_DIR}/gtest-build EXCLUDE_FROM_ALL)
 
-message(STATUS "LIBS    flags: ${LIBS_OPTIONS}")
-message(STATUS "NVCC    flags: ${CUDA_OPTIONS}")
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    message(STATUS "RELEASE flags: ${RELEASE_OPTIONS}")
-elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    message(STATUS "DEBUG flags: ${DEBUG_OPTIONS}")
+    set(GTEST_INCLUDE_DIRS "${gtest_SOURCE_DIR}/include")
+    set(GTEST_BOTH_LIBRARIES gtest_main gtest)
+elseif(BUILD_GTESTS)
+    find_package(GTest REQUIRED)
 endif()
-message("===============================")
-message("Employing buildtype: ${CMAKE_BUILD_TYPE}")
-message("===============================")
 
+if(BUILD_GTESTS)
+    include_directories(${GTEST_INCLUDE_DIRS} SYSTEM)
 
-######################################################
-### Add headers, sources, and wrappers recursively ###
-######################################################
-# include_directories("${CMAKE_CURRENT_SOURCE_DIR}/demaglibrary/include/headers")
-# include_directories("${CMAKE_CURRENT_SOURCE_DIR}/python_wrapper")
+    set(PYBIND11_CUDA_ARRAY_INTERFACE_GTESTS sources/gtest_pybind11_cuda_array_interface.cpp)
 
-file(GLOB_RECURSE SOURCES "sources/*.cpp")
-file(GLOB_RECURSE CUSOURCES "sources/*.cu")
-file(GLOB_RECURSE HEADERS "sources/*.h")
+    add_executable(gtest_pybind11_cuda_array_interface ${PYBIND11_CUDA_ARRAY_INTERFACE_GTESTS})
+    if(DOWNLOAD_GTEST OR GTEST_SRC_DIR)
+        add_dependencies(gtest_pybind11_cuda_array_interface gtest_main)
+    endif()
 
-find_package(pybind11 REQUIRED)
-pybind11_add_module(${PROJECT_NAME} ${SOURCES} ${CUSOURCES} ${HEADERS} ${PYTHON})
+    target_link_libraries(gtest_pybind11_cuda_array_interface Python3::Python ${GTEST_BOTH_LIBRARIES} pybind11::pybind11 pybind11::embed cuda)
+    target_include_directories(gtest_pybind11_cuda_array_interface PRIVATE ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR})
 
-###########################################
-###  Apply RELEASE/DEBUG compile flags  ###
-###########################################
-target_compile_options (${PROJECT_NAME} PRIVATE ${CUDA_OPTIONS})
-target_compile_options (${PROJECT_NAME} PRIVATE ${LIBS_OPTIONS})
-target_compile_options (${PROJECT_NAME} PRIVATE "$<$<CONFIG:DEBUG>:${DEBUG_OPTIONS}>")
-target_compile_options (${PROJECT_NAME} PRIVATE "$<$<CONFIG:RELEASE>:${RELEASE_OPTIONS}>")
+    add_custom_target(gtests COMMAND gtest_pybind11_cuda_array_interface DEPENDS gtest_pybind11_cuda_array_interface)
+endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC ${LIBS_OPTIONS})
+if(BUILD_PYTESTS)
+    set(MODULENAME pycai)
+    set(HPPSOURCES sources/test_kernels.hpp)
+    set(CPPSOURCES sources/pytest_pybind11_cuda_array_interface.cpp)
+    set(CUSOURCES sources/test_kernels.cu)
+    set(LIBS -lcuda)
+
+    pybind11_add_module(${MODULENAME} ${CPPSOURCES} ${CUSOURCES} ${HPPSOURCES})
+
+    set_target_properties(${MODULENAME} PROPERTIES CUDA_ARCHITECTURES "61")
+    target_link_libraries(${MODULENAME} PRIVATE ${LIBS})
+    target_include_directories(${MODULENAME} PRIVATE ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR})
+
+    add_custom_command(TARGET ${MODULENAME} POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy
+                               $<TARGET_FILE:${MODULENAME}>
+                               ${CMAKE_SOURCE_DIR}/tests/pytest/$<TARGET_FILE_NAME:${MODULENAME}>)
+
+    find_program(PYTEST_EXECUTABLE NAMES pytest)
+
+    if(NOT PYTEST_EXECUTABLE)
+        message(FATAL_ERROR "pytest not found!")
+    endif()
+
+    add_custom_target(pytests
+                      COMMAND pytest ${CMAKE_SOURCE_DIR}
+                      COMMENT "RUNNING pytest"
+                      VERBATIM)
+
+endif()
