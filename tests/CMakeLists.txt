@@ -68,19 +68,25 @@ elseif(BUILD_GTESTS)
 endif()
 
 if(BUILD_GTESTS)
+    set(EXECNAME run_gtest_cai)
+
     include_directories(${GTEST_INCLUDE_DIRS} SYSTEM)
 
     set(PYBIND11_CUDA_ARRAY_INTERFACE_GTESTS sources/gtest_pybind11_cuda_array_interface.cpp)
 
-    add_executable(gtest_pybind11_cuda_array_interface ${PYBIND11_CUDA_ARRAY_INTERFACE_GTESTS})
+    add_executable(${EXECNAME} ${PYBIND11_CUDA_ARRAY_INTERFACE_GTESTS})
     if(DOWNLOAD_GTEST OR GTEST_SRC_DIR)
-        add_dependencies(gtest_pybind11_cuda_array_interface gtest_main)
+        add_dependencies(${EXECNAME} gtest_main)
     endif()
 
-    target_link_libraries(gtest_pybind11_cuda_array_interface Python3::Python ${GTEST_BOTH_LIBRARIES} pybind11::pybind11 pybind11::embed cuda)
-    target_include_directories(gtest_pybind11_cuda_array_interface PRIVATE ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR})
+    target_link_libraries(${EXECNAME} Python3::Python ${GTEST_BOTH_LIBRARIES} pybind11::pybind11 pybind11::embed cuda)
+    target_include_directories(${EXECNAME} PRIVATE ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR})
 
-    add_custom_target(gtests COMMAND gtest_pybind11_cuda_array_interface DEPENDS gtest_pybind11_cuda_array_interface)
+    add_custom_command(TARGET ${EXECNAME} POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy
+                               $<TARGET_FILE:${EXECNAME}>
+                               ${CMAKE_SOURCE_DIR}/tests/gtest/$<TARGET_FILE_NAME:${EXECNAME}>)
+
 endif()
 
 if(BUILD_PYTESTS)
@@ -106,10 +112,4 @@ if(BUILD_PYTESTS)
     if(NOT PYTEST_EXECUTABLE)
         message(FATAL_ERROR "pytest not found!")
     endif()
-
-    add_custom_target(pytests
-                      COMMAND pytest ${CMAKE_SOURCE_DIR}
-                      COMMENT "RUNNING pytest"
-                      VERBATIM)
-
 endif()

@@ -3,3 +3,6 @@ build/*
 __pycache__
 *.so
 *.env/*
+*.egg*
+*_skbuild/*
+tests/gtest/run_gtest_cai
