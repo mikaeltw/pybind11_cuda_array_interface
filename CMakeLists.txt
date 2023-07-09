@@ -1,15 +1,23 @@
+#######################################################
+### Set default values for version for dependencies ###
+#######################################################
+
+set(CMAKE_MVERSION 3.18)
+set(PYBIND11_MVERSION 2.9.2)
+set(PYTHON_MVERSION 3.8)
+set(CUDA_MVERSION 10.1)
+set(PACKAGE_MVERSION 0.0.0-dev)
+set(CXX_MVERSION 14)
+
 ##########################
 ### Define the project ###
 ##########################
 
-cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+cmake_minimum_required(VERSION ${CMAKE_MVERSION} FATAL_ERROR)
 project(pybind11_cuda_array_interface LANGUAGES CUDA CXX)
 
 set(PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(${PROJECT_NAME}_VERSION_MAJOR 0)
-set(${PROJECT_NAME}_VERSION_MINOR 0)
-set(${PROJECT_NAME}_VERSION_PATCH 1)
-set(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH})
+set(${PROJECT_NAME}_VERSION ${PACKAGE_MVERSION})
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -26,13 +34,11 @@ message("===============================")
 ### Enable and define CUDA details ###
 ######################################
 
-set(CMAKE_CXX_VERSION 14)
+set(CMAKE_CXX_VERSION ${CXX_MVERSION})
 set(CMAKE_CXX_STANDARD ${CMAKE_CXX_VERSION})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(CheckLanguage)
 if(CMAKE_CUDA_COMPILER)
-    enable_language(CUDA)
 
     if(NOT DEFINED CMAKE_CUDA_STANDARD)
         set(CMAKE_CUDA_STANDARD ${CMAKE_CXX_VERSION})
@@ -40,17 +46,20 @@ if(CMAKE_CUDA_COMPILER)
     endif()
 
     set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+    set(CMAKE_CUDA_ARCHITECTURES 60 61 70 75 80 86)
 else()
     message(FATAL_ERROR "No CUDA compiler found")
 endif()
+
+
 
 ####################
 ### Dependencies ###
 ####################
 
-set(pybind11_REQUIRED_VERSION 2.9.2)
-set(python_REQUIRED_VERSION 3.8)
-set(cuda_REQUIRED_VERSION 10.1)
+set(pybind11_REQUIRED_VERSION ${PYBIND11_MVERSION})
+set(python_REQUIRED_VERSION ${PYTHON_MVERSION})
+set(cuda_REQUIRED_VERSION ${CUDA_MVERSION})
 
 if (NOT TARGET pybind11::pybind11)
     find_package(pybind11 ${pybind11_REQUIRED_VERSION} REQUIRED)
@@ -84,7 +93,6 @@ target_include_directories(${PROJECT_NAME}
                            $<INSTALL_INTERFACE:include>)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${PYBIND11_CUDA_ARRAY_INTERFACE_HEADERS}")
-set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES "61")
 
 ##############################
 ### Define and build Tests - GoogleTests - Bindings for PyTest ###

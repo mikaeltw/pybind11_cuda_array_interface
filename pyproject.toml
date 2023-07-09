@@ -1,8 +1,67 @@
 [build-system]
 requires = [
     "setuptools>=42",
+    "setuptools_scm",
     "scikit-build>=0.13",
     "cmake>=3.18",
+    "pybind11>=2.9.2",
     "ninja",
+    "toml",
+    "build",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name="pybind11_cuda_array_interface"
+authors = [
+    {name = "Mikael Twengström", email = "m.twengstrom@gmail.com"},
+]
+description = "pybind11 headers supporting the __cuda_array_interface__"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: BSD 3-Clause",
+]
+dependencies = [
+  "numpy",
+]
+license = {file = "LICENSE"}
+dynamic = ["version",]
+
+[project.urls]
+repository = "https://github.com/mikaeltw/pybind11_cuda_array_interface"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=2.7.3",
+    "pytest-cov",
+]
+
+[tool.setuptools_scm]
+write_to = "version.py"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests/pytest",
+]
+python_files = [
+    "*.py",
+]
+norecursedirs = [
+    "build",
+]
+# Disable assert rewriting since it confuses most gpu using python packages.
+addopts = [
+    "-v",
+    "--assert=plain",
+]
+#filterwarnings = [
+#    "error",
+#]

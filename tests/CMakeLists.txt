@@ -6,7 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software. #
 ############################################################################
 
-cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+cmake_minimum_required(VERSION ${CMAKE_MVERSION} FATAL_ERROR)
 
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     project(pybind11_cuda_array_interface-test)
@@ -79,7 +79,7 @@ if(BUILD_GTESTS)
         add_dependencies(${EXECNAME} gtest_main)
     endif()
 
-    target_link_libraries(${EXECNAME} Python3::Python ${GTEST_BOTH_LIBRARIES} pybind11::pybind11 pybind11::embed cuda)
+    target_link_libraries(${EXECNAME} Python3::Python ${GTEST_BOTH_LIBRARIES} pybind11::pybind11 pybind11::embed cuda cudart)
     target_include_directories(${EXECNAME} PRIVATE ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR})
 
     add_custom_command(TARGET ${EXECNAME} POST_BUILD
@@ -94,12 +94,11 @@ if(BUILD_PYTESTS)
     set(HPPSOURCES sources/test_kernels.hpp)
     set(CPPSOURCES sources/pytest_pybind11_cuda_array_interface.cpp)
     set(CUSOURCES sources/test_kernels.cu)
-    set(LIBS -lcuda)
+    set(LIBS cuda cudart)
 
     pybind11_add_module(${MODULENAME} ${CPPSOURCES} ${CUSOURCES} ${HPPSOURCES})
 
-    set_target_properties(${MODULENAME} PROPERTIES CUDA_ARCHITECTURES "61")
-    target_link_libraries(${MODULENAME} PRIVATE ${LIBS})
+    #target_link_libraries(${MODULENAME} PRIVATE ${LIBS})
     target_include_directories(${MODULENAME} PRIVATE ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR})
 
     add_custom_command(TARGET ${MODULENAME} POST_BUILD
