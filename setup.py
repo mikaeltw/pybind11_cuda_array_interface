@@ -2,6 +2,7 @@ import os
 import toml
 import re
 import sys
+import shutil
 
 
 from skbuild import setup
@@ -96,10 +97,16 @@ def get_cmake_args(dev=True):
     return cmake_args
 
 
-setup(
-    packages=find_packages(),
-    platforms=["Linux", "Windows", "MacOSX"],
-    #cmake_install_dir=get_cmake_build_dir(),
-    #cmake_source_dir=get_current_directory(),
-    cmake_args=get_cmake_args()
-)
+if __name__ == "__main__":
+
+    # Make sure that we start with a clean build every time.
+    build_path = os.path.join(get_current_directory(abs_path=True), "_skbuild")
+    shutil.rmtree(build_path, ignore_errors=True)
+
+    setup(
+        packages=find_packages(),
+        platforms=["Linux", "Windows", "MacOSX"],
+        #cmake_install_dir=get_cmake_build_dir(),
+        #cmake_source_dir=get_current_directory(),
+        cmake_args=get_cmake_args()
+    )

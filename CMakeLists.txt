@@ -78,17 +78,17 @@ endif()
 ### Dependencies ###
 ####################
 
-set(pybind11_REQUIRED_VERSION ${PYBIND11_MVERSION})
 set(python_REQUIRED_VERSION ${PYTHON_MVERSION})
+set(pybind11_REQUIRED_VERSION ${PYBIND11_MVERSION})
 set(cuda_REQUIRED_VERSION ${CUDA_MVERSION})
+
+set(Python3_FIND_VIRTUALENV FIRST)
+if(NOT TARGET Python3::Interpreter OR NOT TARGET Python3::Python)
+    find_package(Python3 ${python_REQUIRED_VERSION} REQUIRED COMPONENTS Interpreter Development)
+endif()
 
 if (NOT TARGET pybind11::pybind11)
     find_package(pybind11 ${pybind11_REQUIRED_VERSION} REQUIRED)
-endif()
-
-if(NOT TARGET Python3::Interpreter OR NOT TARGET Python3::Python)
-    set(Python3_FIND_VIRTUALENV ONLY)
-    find_package(Python3 ${python_REQUIRED_VERSION} REQUIRED COMPONENTS Interpreter Development)
 endif()
 
 if(NOT TARGET CUDA::toolkit)
