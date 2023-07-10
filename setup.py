@@ -92,6 +92,7 @@ def get_cmake_args(dev=True):
         cmake_args += get_windows_cmake_args()
     else:
         assert("Unknown platform.")
+    cmake_args += get_dependencies_as_cmake_args()
     return cmake_args
 
 

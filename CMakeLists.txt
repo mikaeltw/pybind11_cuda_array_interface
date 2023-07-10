@@ -2,12 +2,29 @@
 ### Set default values for version for dependencies ###
 #######################################################
 
-set(CMAKE_MVERSION 3.18)
-set(PYBIND11_MVERSION 2.9.2)
-set(PYTHON_MVERSION 3.8)
-set(CUDA_MVERSION 10.1)
-set(PACKAGE_MVERSION 0.0.0-dev)
-set(CXX_MVERSION 14)
+if(NOT DEFINED CMAKE_MVERSION)
+    set(CMAKE_MVERSION 3.17)
+endif()
+
+if(NOT DEFINED PYBIND11_MVERSION)
+    set(PYBIND11_MVERSION 2.9.2)
+endif()
+
+if(NOT DEFINED PYTHON_MVERSION)
+    set(PYTHON_MVERSION 3.8)
+endif()
+
+if(NOT DEFINED CUDA_MVERSION)
+    set(CUDA_MVERSION 10.1)
+endif()
+
+if(NOT DEFINED PACKAGE_MVERSION)
+    set(PACKAGE_MVERSION 0.0.0-dev)
+endif()
+
+if(NOT DEFINED CXX_MVERSION)
+    set(CXX_MVERSION 14)
+endif()
 
 ##########################
 ### Define the project ###
@@ -46,7 +63,11 @@ if(CMAKE_CUDA_COMPILER)
     endif()
 
     set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-    set(CMAKE_CUDA_ARCHITECTURES 60 61 70 75 80 86)
+
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES 60 61 70 75 80 86)
+    endif()
+
 else()
     message(FATAL_ERROR "No CUDA compiler found")
 endif()

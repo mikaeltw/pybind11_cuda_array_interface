@@ -68,6 +68,10 @@ elseif(BUILD_GTESTS)
 endif()
 
 if(BUILD_GTESTS)
+    message("====== Building GoogleTEST ===")
+    message("===                        ===")
+    message("==============================")
+
     set(EXECNAME run_gtest_cai)
 
     include_directories(${GTEST_INCLUDE_DIRS} SYSTEM)
@@ -90,16 +94,24 @@ if(BUILD_GTESTS)
 endif()
 
 if(BUILD_PYTESTS)
+    message("====== Building PYTEST ======")
+    message("===                       ===")
+    message("=============================")
+
     set(MODULENAME pycai)
-    set(HPPSOURCES sources/test_kernels.hpp)
     set(CPPSOURCES sources/pytest_pybind11_cuda_array_interface.cpp)
     set(CUSOURCES sources/test_kernels.cu)
-    set(LIBS cuda cudart)
+    set(LIBS Python3::Python pybind11::pybind11 pybind11::embed cuda cudart)
 
-    pybind11_add_module(${MODULENAME} ${CPPSOURCES} ${CUSOURCES} ${HPPSOURCES})
+    # The following module from pybind11 does not respect the CMAKE_CUDA_ARCHITECTURES
+    # variable which handles which archs to build and link to. This results in missing linking
+    # of device code in the produced module. Use add_library until bug resolved.
+    # pybind11_add_module(${MODULENAME} ${CPPSOURCES} ${CUSOURCES})
 
-    #target_link_libraries(${MODULENAME} PRIVATE ${LIBS})
+    add_library(${MODULENAME} MODULE ${CPPSOURCES} ${CUSOURCES})
+    target_link_libraries(${MODULENAME} PRIVATE ${LIBS})
     target_include_directories(${MODULENAME} PRIVATE ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR})
+    set_target_properties(${MODULENAME} PROPERTIES PREFIX "")
 
     add_custom_command(TARGET ${MODULENAME} POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy
