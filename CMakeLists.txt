@@ -3,7 +3,7 @@
 #######################################################
 
 if(NOT DEFINED CMAKE_MVERSION)
-    set(CMAKE_MVERSION 3.17)
+    set(CMAKE_MVERSION 3.18)
 endif()
 
 if(NOT DEFINED PYBIND11_MVERSION)
