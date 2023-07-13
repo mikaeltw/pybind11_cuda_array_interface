@@ -7,3 +7,4 @@ __pycache__
 *_skbuild/*
 tests/gtest/run_gtest_cai
 version.py
+dist
