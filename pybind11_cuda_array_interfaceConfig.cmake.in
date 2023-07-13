@@ -1,9 +1,9 @@
 # pybind11_cuda_array_interface cmake module
 # This module sets the following variables in your project::
 #
-#   pybind11_cuda_array_interface_FOUND - true if pybind11_cuda_array_interface found on the system
-#   pybind11_cuda_array_interface_INCLUDE_DIRS - the directory containing pybind11_cuda_array_interface headers
-#   pybind11_cuda_array_interface_LIBRARY - empty
+# pybind11_cuda_array_interface_FOUND - true if pybind11_cuda_array_interface found on the system
+# pybind11_cuda_array_interface_INCLUDE_DIRS - the directory containing pybind11_cuda_array_interface headers
+# pybind11_cuda_array_interface_LIBRARY - empty
 
 @PACKAGE_INIT@
 

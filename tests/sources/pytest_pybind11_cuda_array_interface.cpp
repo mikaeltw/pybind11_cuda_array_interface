@@ -5,8 +5,6 @@
 
 #include <iostream>
 
-
-
 void saxpy(cai::cuda_array_t s, cai::cuda_array_t x, cai::cuda_array_t y, int a) {
 
     auto s_ptr = s.get_compatible_typed_pointer<float>();

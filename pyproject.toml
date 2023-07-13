@@ -7,7 +7,6 @@ requires = [
     "pybind11[global]>=2.9.2",
     "ninja",
     "toml",
-    "build",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -29,9 +28,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: BSD License",
 ]
-dependencies = [
-  "numpy",
-]
+dependencies = []
 license = {file = "LICENSE"}
 dynamic = ["version",]
 

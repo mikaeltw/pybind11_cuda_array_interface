@@ -60,8 +60,7 @@ def get_dependencies_as_cmake_args():
 
 
 def get_testbuild_args_as_cmake_args():
-    return ['-DDOWNLOAD_GTEST=ON',
-            '-DBUILD_GTESTS=ON',
+    return ['-DBUILD_GTESTS=ON',
             '-DBUILD_PYTESTS=ON']
 
 
