@@ -1,0 +1,49 @@
+name: CI
+
+on:
+    push:
+      branches:
+        - main
+    pull_request:
+      branches:
+        - main
+
+jobs:
+  build:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        cuda_version: [10.2, 11.6, 12.0]
+        python: [3.8, 3.9, 3.10, 3.11]
+
+    steps:
+    - name: Checkout repository
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python }}
+
+    - name: Set CUDA version for the runner
+      run: |
+        export CUDA_HOME=/usr/local/cuda-${{ matrix.cuda_version }}
+        export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
+        export PATH=${CUDA_HOME}/bin:${PATH}
+
+    - name: Install dependencies
+      run: |
+        python3 -m pip install -U pip
+        python3 tests/install_cupy.py
+
+    - name: Install package for testing
+      run: |
+        python3 -m pip install .[test]
+
+    - name: Run Pytest
+      run: |
+        pytest
+
+    - name: Run GoogleTest
+      run: |
+        tests/gtest/run_gtest_cai

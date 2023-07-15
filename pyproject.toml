@@ -38,7 +38,7 @@ repository = "https://github.com/mikaeltw/pybind11_cuda_array_interface"
 [project.optional-dependencies]
 test = [
     "pytest>=2.7.3",
-    "pytest-cov",
+    "numpy>=1.23",
 ]
 
 [tool.setuptools_scm]
@@ -59,7 +59,8 @@ addopts = [
     "-v",
     "--assert=plain",
 ]
-#filterwarnings = [
-#    "error",
-#]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+]
 
