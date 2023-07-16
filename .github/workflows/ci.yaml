@@ -10,23 +10,37 @@ on:
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        cuda_version: ['10.2', '11.6', '12.0']
-        python: ['3.8', '3.9', '3.10', '3.11']
+        cuda_version: ['12.0']
+        python: ['3.9']
 
     steps:
+    - name: update git
+      run: |
+        sudo apt-get install -y software-properties-common \
+        && sudo apt-get update \
+        && sudo add-apt-repository -y ppa:git-core/ppa \
+        && sudo apt-get update \
+        && sudo apt-get install -y git
+
+
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: GIT TAGS
       run: |
-       git tag
+        git status
+        git tag
+        git --version
+
 
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}
 
@@ -49,14 +63,24 @@ jobs:
         echo ${{ env.LD_LIBRARY_PATH }}
         echo ${{ env.PATH }}
 
-    - name: Install dependencies
+    - name: python versions
       run: |
-        python3 -m pip install -U pip
-        python3 tests/install_cupy.py
+        python --version
+        pip --version
 
-    - name: Install package for testing
+    - name: Upgrade pip
       run: |
-        python3 -m pip install .[test]
+        python -m pip install -U pip
+        pip --version
+        pip install setuptools-git
+
+    # - name: Install the cupy wheel matching the CUDA version of the host
+    #   run: |
+    #     python tests/install_cupy.py
+
+    - name: Install pybind11_cuda_array_interface for testing
+      run: |
+        export SETUPTOOLS_SCM_DEBUG=1 && pip install .[test]
 
     - name: Run Pytest
       run: |
