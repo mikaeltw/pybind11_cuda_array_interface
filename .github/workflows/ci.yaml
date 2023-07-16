@@ -22,7 +22,7 @@ jobs:
 
     - name: GIT TAGS
       run: |
-       git tag
+        git tag
 
 
     - name: Set up Python
@@ -49,12 +49,15 @@ jobs:
         echo ${{ env.LD_LIBRARY_PATH }}
         echo ${{ env.PATH }}
 
-    - name: Install dependencies
+    - name: Upgrade pip
       run: |
         python3 -m pip install -U pip
+
+    - name: Install the cupy wheel matching the CUDA version of the host
+      run: |
         python3 tests/install_cupy.py
 
-    - name: Install package for testing
+    - name: Install pybind11_cuda_array_interface for testing
       run: |
         python3 -m pip install .[test]
 
