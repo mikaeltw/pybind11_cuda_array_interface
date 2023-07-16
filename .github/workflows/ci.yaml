@@ -33,6 +33,10 @@ jobs:
 
     - name: Install dependencies
       run: |
+        echo $CUDA_HOME
+        echo $LD_LIBRARY_PATH
+        echo $PATH
+        
         python3 -m pip install -U pip
         python3 tests/install_cupy.py
 

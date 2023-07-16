@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import re
+import os
 
 def get_cuda_version():
     version = subprocess.run(["nvcc", "--version"], capture_output=True, text=True)
@@ -14,4 +15,5 @@ def install_cupy():
     subprocess.run([sys.executable, "-m", "pip", "install", cupy_package])
 
 if __name__ == "__main__":
+    print(os.environ)
     install_cupy()
