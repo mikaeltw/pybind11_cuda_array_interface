@@ -27,9 +27,9 @@ jobs:
 
     - name: Set CUDA version for the runner
       run: |
-        export CUDA_HOME=/usr/local/cuda-${{ matrix.cuda_version }}
-        export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
-        export PATH=${CUDA_HOME}/bin:${PATH}
+        echo CUDA_HOME=/usr/local/cuda-${{ matrix.cuda_version }} >> $GITHUB_ENV
+        echo LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH} >> $GITHUB_ENV
+        echo PATH=${CUDA_HOME}/bin:${PATH} >> $GITHUB_ENV
 
     - name: Check vars
       run: |
