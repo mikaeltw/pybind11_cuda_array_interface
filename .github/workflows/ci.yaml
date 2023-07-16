@@ -18,32 +18,32 @@ jobs:
 
     steps:
     - name: Checkout repository
-        uses: actions/checkout@v2
+      uses: actions/checkout@v2
 
     - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-            python-version: ${{ matrix.python }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python }}
 
     - name: Set CUDA version for the runner
-        run: |
-            export CUDA_HOME=/usr/local/cuda-${{ matrix.cuda_version }}
-            export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
-            export PATH=${CUDA_HOME}/bin:${PATH}
+      run: |
+        export CUDA_HOME=/usr/local/cuda-${{ matrix.cuda_version }}
+        export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
+        export PATH=${CUDA_HOME}/bin:${PATH}
 
     - name: Install dependencies
-        run: |
-            python3 -m pip install -U pip
-            python3 tests/install_cupy.py
+      run: |
+        python3 -m pip install -U pip
+        python3 tests/install_cupy.py
 
     - name: Install package for testing
-        run: |
-            python3 -m pip install .[test]
+      run: |
+        python3 -m pip install .[test]
 
     - name: Run Pytest
-        run: |
-            pytest
+      run: |
+        pytest
 
     - name: Run GoogleTest
-        run: |
-            tests/gtest/run_gtest_cai
+      run: |
+        tests/gtest/run_gtest_cai
