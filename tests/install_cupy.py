@@ -5,8 +5,8 @@ import os
 
 def get_cuda_version():
     version = subprocess.run(["nvcc", "--version"], capture_output=True, text=True)
-    version = version.stdout.split()[-1]  # get the version string
-    version = re.split('_|\.', version)[1:3] # get major and minor version
+    version = re.split('release ', version.stdout)[1] # get major and minor version
+    version = re.split('\.| |,', version)[0:2]
     return "".join(version)
 
 def install_cupy():
@@ -15,5 +15,4 @@ def install_cupy():
     subprocess.run([sys.executable, "-m", "pip", "install", cupy_package])
 
 if __name__ == "__main__":
-    print(os.environ)
     install_cupy()
