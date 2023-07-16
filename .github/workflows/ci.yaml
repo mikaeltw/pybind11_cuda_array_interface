@@ -27,9 +27,10 @@ jobs:
 
     - name: Set CUDA version for the runner
       run: |
-        echo CUDA_HOME=/usr/local/cuda-${{ matrix.cuda_version }} >> $GITHUB_ENV
-        echo LD_LIBRARY_PATH=${{ env.CUDA_HOME }}/lib64:${{ env.LD_LIBRARY_PATH }} >> $GITHUB_ENV
-        echo PATH=${{ env.CUDA_HOME }}/bin:${{ env.PATH }} >> $GITHUB_ENV
+        CUDA_HOME=/usr/local/cuda-${{ matrix.cuda_version }}
+        echo CUDA_HOME=${CUDA_HOME} >> $GITHUB_ENV
+        echo LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${{ env.LD_LIBRARY_PATH }} >> $GITHUB_ENV
+        echo PATH=${CUDA_HOME}/bin:${{ env.PATH }} >> $GITHUB_ENV
 
     - name: Check vars
       run: |
@@ -37,6 +38,11 @@ jobs:
         echo $LD_LIBRARY_PATH
         echo $PATH
 
+    - name: Check vars 2
+      run: |
+        echo ${{ env.CUDA_HOME }}
+        echo ${{ env.LD_LIBRARY_PATH }}
+        echo ${{ env.PATH }}
 
     - name: Install dependencies
       run: |
