@@ -31,12 +31,15 @@ jobs:
         export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
         export PATH=${CUDA_HOME}/bin:${PATH}
 
-    - name: Install dependencies
+    - name: Check vars
       run: |
         echo $CUDA_HOME
         echo $LD_LIBRARY_PATH
         echo $PATH
 
+
+    - name: Install dependencies
+      run: |
         python3 -m pip install -U pip
         python3 tests/install_cupy.py
 
