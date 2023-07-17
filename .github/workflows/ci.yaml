@@ -22,11 +22,11 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: GIT TAGS
-      run: |
-        git status
-        git tag
-        git --version
+    # - name: GIT TAGS
+    #   run: |
+    #     git status
+    #     git tag
+    #     git --version
 
 
 
