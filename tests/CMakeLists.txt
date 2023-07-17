@@ -29,12 +29,6 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     find_package(pybind11_cuda_array_interface REQUIRED CONFIG)
 endif()
 
-if(DEFINED CUDA_HOME)
-    set(CUDA_INCLUDE_DIR $CUDA_HOME/include)
-else()
-    set(CUDA_INCLUDE_DIR "")
-endif()
-
 if(BUILD_GTESTS)
     configure_file(gtest/getGTest.cmake.in gtest-get/CMakeLists.txt)
 
@@ -72,7 +66,7 @@ if(BUILD_GTESTS)
                 pybind11::pybind11
                 pybind11::embed
                 cuda
-                cudart
+                CUDA::cudart
     )
     target_include_directories(${EXECNAME} PRIVATE
                                ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR}
@@ -91,7 +85,7 @@ if(BUILD_PYTESTS)
     set(MODULENAME pycai)
     set(CPPSOURCES sources/pytest_pybind11_cuda_array_interface.cpp)
     set(CUSOURCES sources/test_kernels.cu)
-    set(LIBS Python3::Python pybind11::pybind11 pybind11::embed cuda cudart)
+    set(LIBS Python3::Python pybind11::pybind11 pybind11::embed cuda CUDA::cudart)
 
     # TODO: The following module from pybind11 does not respect the CMAKE_CUDA_ARCHITECTURES
     # variable which handles which archs to build and link to. This results in missing linking

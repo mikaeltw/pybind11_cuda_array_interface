@@ -67,7 +67,7 @@ if (NOT TARGET pybind11::pybind11)
 endif()
 
 if(NOT TARGET CUDA::toolkit)
-    find_package(CUDA ${CUDA_MVERSION} REQUIRED)
+    find_package(CUDAToolkit ${CUDA_MVERSION} REQUIRED)
 endif()
 
 ############################
