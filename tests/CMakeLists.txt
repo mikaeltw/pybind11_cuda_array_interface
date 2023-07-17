@@ -29,6 +29,12 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     find_package(pybind11_cuda_array_interface REQUIRED CONFIG)
 endif()
 
+if(DEFINED CUDA_HOME)
+    set(CUDA_INCLUDE_DIR $CUDA_HOME/include)
+else()
+    set(CUDA_INCLUDE_DIR "")
+endif()
+
 if(BUILD_GTESTS)
     configure_file(gtest/getGTest.cmake.in gtest-get/CMakeLists.txt)
 
@@ -71,6 +77,7 @@ if(BUILD_GTESTS)
     target_include_directories(${EXECNAME} PRIVATE
                                ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR}
                                ${GTEST_INCLUDE_DIRS}
+                               ${CUDA_INCLUDE_DIR}
     )
     add_custom_command(TARGET ${EXECNAME} POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy
@@ -95,7 +102,10 @@ if(BUILD_PYTESTS)
 
     add_library(${MODULENAME} MODULE ${CPPSOURCES} ${CUSOURCES})
     target_link_libraries(${MODULENAME} PRIVATE project_options ${LIBS} )
-    target_include_directories(${MODULENAME} PRIVATE ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR})
+    target_include_directories(${MODULENAME} PRIVATE
+                               ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR}
+                               ${CUDA_INCLUDE_DIR}
+    )
     set_target_properties(${MODULENAME} PROPERTIES PREFIX "")
     add_custom_command(TARGET ${MODULENAME} POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy
