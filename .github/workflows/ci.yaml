@@ -63,6 +63,7 @@ jobs:
       run: |
         python -m pip install -U pip
         pip --version
+        pip install setuptools-git
 
     - name: Install the cupy wheel matching the CUDA version of the host
       run: |
