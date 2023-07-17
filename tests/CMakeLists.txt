@@ -71,7 +71,6 @@ if(BUILD_GTESTS)
     target_include_directories(${EXECNAME} PRIVATE
                                ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR}
                                ${GTEST_INCLUDE_DIRS}
-                               ${CUDA_INCLUDE_DIR}
     )
     add_custom_command(TARGET ${EXECNAME} POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy
@@ -98,7 +97,6 @@ if(BUILD_PYTESTS)
     target_link_libraries(${MODULENAME} PRIVATE project_options ${LIBS} )
     target_include_directories(${MODULENAME} PRIVATE
                                ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR}
-                               ${CUDA_INCLUDE_DIR}
     )
     set_target_properties(${MODULENAME} PROPERTIES PREFIX "")
     add_custom_command(TARGET ${MODULENAME} POST_BUILD
