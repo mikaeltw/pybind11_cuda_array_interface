@@ -22,7 +22,9 @@ jobs:
 
     - name: GIT TAGS
       run: |
+        git status
         git tag
+        git --version
 
 
     - name: Set up Python
