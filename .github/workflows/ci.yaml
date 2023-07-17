@@ -80,7 +80,7 @@ jobs:
 
     - name: Install pybind11_cuda_array_interface for testing
       run: |
-        pip install .[test]
+        export SETUPTOOLS_SCM_DEBUG=1 && pip install .[test]
 
     - name: Run Pytest
       run: |
