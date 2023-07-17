@@ -65,9 +65,9 @@ jobs:
         pip --version
         pip install setuptools-git
 
-    - name: Install the cupy wheel matching the CUDA version of the host
-      run: |
-        python tests/install_cupy.py
+    # - name: Install the cupy wheel matching the CUDA version of the host
+    #   run: |
+    #     python tests/install_cupy.py
 
     - name: Install pybind11_cuda_array_interface for testing
       run: |
