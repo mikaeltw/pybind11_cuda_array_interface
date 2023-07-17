@@ -71,7 +71,7 @@ jobs:
 
     - name: Install pybind11_cuda_array_interface for testing
       run: |
-        python -m pip install .[test]
+        pip install .[test]
 
     - name: Run Pytest
       run: |
