@@ -1,43 +1,34 @@
 name: CI
 
+
+
 on:
-    push:
-      branches:
-        - main
-    pull_request:
-      branches:
-        - main
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+  release:
+    types: [published]
+
+
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build_and_test:
+    name: Build pycai and run tests
+    runs-on: self-hosted
     strategy:
       matrix:
-        cuda_version: ['12.0']
-        python: ['3.9']
+        cuda_version: ['11.6']
+        python: ['3.10']
 
     steps:
-    - name: update git
-      run: |
-        sudo apt-get install -y software-properties-common \
-        && sudo apt-get update \
-        && sudo add-apt-repository -y ppa:git-core/ppa \
-        && sudo apt-get update \
-        && sudo apt-get install -y git
-
-
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-
-    - name: GIT TAGS
-      run: |
-        git status
-        git tag
-        git --version
-
-
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -46,46 +37,195 @@ jobs:
 
     - name: Set CUDA version for the runner
       run: |
-        CUDA_HOME=/usr/local/cuda-${{ matrix.cuda_version }}
-        echo CUDA_HOME=${CUDA_HOME} >> $GITHUB_ENV
-        echo LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${{ env.LD_LIBRARY_PATH }} >> $GITHUB_ENV
-        echo PATH=${CUDA_HOME}/bin:${{ env.PATH }} >> $GITHUB_ENV
+        CUDA_HOME="/usr/local/cuda-${{ matrix.cuda_version }}"
+        echo "CUDA_HOME=${CUDA_HOME}" >> $GITHUB_ENV
 
-    - name: Check vars
-      run: |
-        echo $CUDA_HOME
-        echo $LD_LIBRARY_PATH
-        echo $PATH
+        if [[ -n "${{ env.LD_LIBRARY_PATH }}" ]]; then
+          echo "LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${{ env.LD_LIBRARY_PATH }}" >> $GITHUB_ENV
+        else
+          echo "LD_LIBRARY_PATH=${CUDA_HOME}/lib64" >> $GITHUB_ENV
+        fi
 
-    - name: Check vars 2
-      run: |
-        echo ${{ env.CUDA_HOME }}
-        echo ${{ env.LD_LIBRARY_PATH }}
-        echo ${{ env.PATH }}
-
-    - name: python versions
-      run: |
-        python --version
-        pip --version
+        echo "${CUDA_HOME}/bin" >> $GITHUB_PATH
 
     - name: Upgrade pip
       run: |
-        python -m pip install -U pip
-        pip --version
-        pip install setuptools-git
+        python -m pip install -U pip>=22.3
 
-    # - name: Install the cupy wheel matching the CUDA version of the host
-    #   run: |
-    #     python tests/install_cupy.py
+    - name: Install the cupy wheel matching the CUDA version of the host
+      run: |
+        python tests/install_cupy.py
 
     - name: Install pybind11_cuda_array_interface for testing
       run: |
-        export SETUPTOOLS_SCM_DEBUG=1 && pip install .[test]
+        python -m pip install .[test]
 
     - name: Run Pytest
       run: |
-        pytest
+        python -m pytest
 
     - name: Run GoogleTest
       run: |
         tests/gtest/run_gtest_cai
+
+
+
+  packaging:
+    name: Package pycai for PyPI
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.8
+
+    - name: Install packaging tools
+      run: |
+        python -m pip install build twine
+
+    - name: Build source distribution
+      run: |
+        python -m build --sdist
+
+    - name: Check metadata
+      run: |
+        python -m twine check dist/*
+
+    - name: Store the package version
+      uses: actions/upload-artifact@v3
+      with:
+        name: pycai_version
+        path: version.py
+
+    - name: Store the source build
+      uses: actions/upload-artifact@v3
+      with:
+        name: pycai_source_build
+        path: dist/*
+
+
+
+  test_upload_pypi:
+    name: Upload pycai to Test-PyPI
+    needs: [build_and_test, packaging]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+
+      - name: Fetch packaged source build
+        uses: actions/download-artifact@v3
+        with:
+          name: pycai_source_build
+          path: pycai_source_build
+
+      - name: Publish package to test PYPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TEST_PYPI_PYCAI_API_TOKEN }}
+          packages-dir: pycai_source_build/
+          repository-url: https://test.pypi.org/legacy/
+
+
+
+  test_pypi_package:
+    name: Test pycai from TestPyPI
+    needs: [test_upload_pypi]
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        cuda_version: ['11.6']
+        python: ['3.8']
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Fetch packaged source build
+        uses: actions/download-artifact@v3
+        with:
+          name: pycai_version
+
+      - name: Extract version
+        id: get_version
+        run: |
+          echo "VERSION=$(awk -F\' '/__version__ = version = / {print $2}' version.py)" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Set CUDA version for the runner
+        run: |
+          CUDA_HOME="/usr/local/cuda-${{ matrix.cuda_version }}"
+          echo "CUDA_HOME=${CUDA_HOME}" >> $GITHUB_ENV
+
+          if [[ -n "${{ env.LD_LIBRARY_PATH }}" ]]; then
+            echo "LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${{ env.LD_LIBRARY_PATH }}" >> $GITHUB_ENV
+          else
+            echo "LD_LIBRARY_PATH=${CUDA_HOME}/lib64" >> $GITHUB_ENV
+          fi
+
+          echo "${CUDA_HOME}/bin" >> $GITHUB_PATH
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install -U pip>=22.3
+
+      - name: Install the cupy wheel matching the CUDA version of the host
+        run: |
+          python tests/install_cupy.py
+
+      - name: Install pybind11_cuda_array_interface for testing
+        run: |
+          python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pybind11-cuda-array-interface[test]==${{ steps.get_version.outputs.VERSION }}
+        shell: bash
+
+
+
+
+
+
+
+
+      - name: Run Pytest
+        run: |
+          python -m pytest
+    
+      - name: Run GoogleTest
+        run: |
+          tests/gtest/run_gtest_cai
+
+
+
+  upload_pypi:
+    name: Upload pycai to PyPI
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: [test_pypi_package]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Fetch packaged source build
+        uses: actions/download-artifact@v3
+        with:
+          name: pycai_source_build
+          path: pycai_source_build
+
+      - name: Publish package to PYPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_PYCAI_API_TOKEN }}
+          packages-dir: pycai_source_build/

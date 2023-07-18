@@ -8,3 +8,4 @@ __pycache__
 tests/gtest/run_gtest_cai
 version.py
 dist
+MANIFEST.in

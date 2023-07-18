@@ -42,6 +42,9 @@ test = [
 ]
 
 [tool.setuptools_scm]
+fallback_version = "0.0.0"
+version_scheme = "no-guess-dev"
+local_scheme = "no-local-version"
 write_to = "version.py"
 
 [tool.pytest.ini_options]
