@@ -184,10 +184,23 @@ jobs:
         run: |
           python tests/install_cupy.py
 
+    #   - name: Install pybind11_cuda_array_interface for testing
+    #     run: |
+    #       python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pybind11-cuda-array-interface[test]==${{ steps.get_version.outputs.VERSION }}
+    #     shell: bash
+        # Retries are needed since the upload to Test PyPI might not have been indexed yet after
+        # the upload in the previous step.
       - name: Install pybind11_cuda_array_interface for testing
-        run: |
-          python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pybind11-cuda-array-interface[test]==${{ steps.get_version.outputs.VERSION }}
-        shell: bash
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 60
+          retry_on: error
+          shell: bash
+          command: python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pybind11-cuda-array-interface[test]==${{ steps.get_version.outputs.VERSION }}
+
+          
 
 
 
