@@ -9,6 +9,13 @@ from skbuild import setup
 from setuptools import find_packages
 from setuptools_scm import get_version
 
+def get_env_variable_bool_state(var_name):
+    value = os.getenv(var_name)
+    if value is not None and value.lower() in ('1', 'true', 'yes', 'on'):
+        return 'ON'
+    else:
+        return 'OFF'
+
 
 def minimum_requirements_of_non_python_dependencies():
     return ['cuda>=10.1',
@@ -60,8 +67,8 @@ def get_dependencies_as_cmake_args():
 
 
 def get_testbuild_args_as_cmake_args():
-    return ['-DBUILD_GTESTS=ON',
-            '-DBUILD_PYTESTS=ON']
+    return [''.join(('-DBUILD_GTESTS=', get_env_variable_bool_state('BUILD_GTESTS'))),
+            ''.join(('-DBUILD_PYTESTS=', get_env_variable_bool_state('BUILD_PYTESTS')))]
 
 
 def get_linux_cmake_args():
