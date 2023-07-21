@@ -21,8 +21,8 @@ jobs:
     runs-on: self-hosted
     strategy:
       matrix:
-        cuda_version: ['11.6']
-        python: ['3.10']
+        cuda_version: ['10.2', '11.6']
+        python: ['3.8', '3.9', '3.10', '3.11']
 
     steps:
     - name: Checkout repository
