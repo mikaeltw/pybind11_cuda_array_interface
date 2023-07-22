@@ -14,6 +14,8 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
+#include <functional>
+
 #include <cuda.h>
 
 namespace py = pybind11;
@@ -45,16 +47,37 @@ namespace cuerrutil {
 
 namespace cai {
 
+    //Forward declarations
+    struct cuda_array_t;
+    //template <> struct py::detail::type_caster<cuda_array_t>;
+
     struct cuda_memory_handle {
-        CUdeviceptr ptr;
-        size_t size;
+        private:
+            CUdeviceptr ptr;
+            std::function<void(CUdeviceptr)> deleter;
 
-        cuda_memory_handle(CUdeviceptr ptr, size_t size)
-            : ptr(ptr), size(size) {}
+            // Constructor for C++-created objects (default deleter)
+            cuda_memory_handle(CUdeviceptr ptr)
+                : ptr(ptr), deleter([](CUdeviceptr ptr) { cuMemFree(ptr); }) {}
 
-        ~cuda_memory_handle() {
-            cuMemFree(ptr);
-        }
+            // Constructor for Python-created objects (explicit do-nothing deleter)
+            cuda_memory_handle(CUdeviceptr ptr, std::function<void(CUdeviceptr)> deleter)
+                : ptr(ptr), deleter(deleter) {}
+
+            friend struct cuda_array_t;
+            friend struct py::detail::type_caster<cuda_array_t>;
+
+        public:
+            ~cuda_memory_handle() {
+                deleter(ptr);
+            }
+
+        protected:
+            // Factory method
+            template<typename... Args>
+            static std::shared_ptr<cuda_memory_handle> make_shared_handle(Args&&... args) {
+                return std::shared_ptr<cuda_memory_handle>(new cuda_memory_handle(std::forward<Args>(args)...));
+            }
     };
 
     struct cuda_array_t {
@@ -156,10 +179,7 @@ public:
         CUdeviceptr devicePtr;
         checkCudaErrors(cuPointerGetAttribute(&devicePtr, CU_POINTER_ATTRIBUTE_DEVICE_POINTER, inputPtr));
 
-        value.handle = std::shared_ptr<cai::cuda_memory_handle>(
-            new cai::cuda_memory_handle(devicePtr, value.size_of_shape()),
-            [](cai::cuda_memory_handle*) {}
-        );
+        value.handle = cai::cuda_memory_handle::make_shared_handle(devicePtr, [](CUdeviceptr){});
 
         value.readonly = data[1].cast<bool>();
 
@@ -177,6 +197,17 @@ public:
             throw std::runtime_error("Improper current CUDA context");
         }
 
+        // If py_obj of src is set it means it originates from Python and the object can thus be released.
+        if (!src.py_obj.is_none()) {
+            return src.py_obj;
+        }
+
+        // Assuming src was created in C++, src.handle owns the CUDA memory and should
+        // be wrapped in a py::capsule to transfer ownership to Python.
+        py::capsule caps(src.handle.get(), [](void* p) {
+            delete reinterpret_cast<cai::cuda_memory_handle*>(p);
+        });
+
         CUdeviceptr devptr;
         checkCudaErrors(cuPointerGetAttribute(&devptr, CU_POINTER_ATTRIBUTE_DEVICE_POINTER, src.ptr()));
 
@@ -191,6 +222,10 @@ public:
         py::object types = py::module::import("types");
         py::object caio = types.attr("SimpleNamespace")();
         caio.attr("__cuda_array_interface__") = interface;
+
+        // Make the SimpleNamespace object owns the capsule to prevent it from being garbage collected
+        caio.attr("_capsule") = caps;
+
         return caio.release();
     }
 };
