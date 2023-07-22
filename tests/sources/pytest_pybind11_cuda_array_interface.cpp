@@ -11,7 +11,7 @@ void saxpy(cai::cuda_array_t s, cai::cuda_array_t x, cai::cuda_array_t y, int a)
     auto x_ptr = x.get_compatible_typed_pointer<float>();
     auto y_ptr = y.get_compatible_typed_pointer<float>();
 
-    call_saxpy(s_ptr, x_ptr, y_ptr, a, s.size_of_shape());
+    call_saxpy(s_ptr, x_ptr, y_ptr, a, static_cast<int>(s.size_of_shape()));
 }
 
 cai::cuda_array_t receive_and_return_cuda_array_interface(cai::cuda_array_t s) {
