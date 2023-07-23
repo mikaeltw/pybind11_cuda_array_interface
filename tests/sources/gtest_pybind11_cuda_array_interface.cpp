@@ -29,12 +29,10 @@ TEST(CudaArrayInterface, SendAndReceive) {
     py::list lst = py::cast(std::vector<int>({1, 2, 3, 4, 5}));
     py::object cupy_array = cp.attr("array")(lst).attr("astype")("int32");
 
-    py::object result = m.attr("sendandreceive")(cupy_array);
+    py::object received_cupy_array = m.attr("sendandreceive")(cupy_array);
 
     // Check if the returned object has __cuda_array_interface__
-    ASSERT_TRUE(py::hasattr(result, "__cuda_array_interface__"));
-
-    py::object received_cupy_array = cp.attr("asarray")(result);
+    ASSERT_TRUE(py::hasattr(received_cupy_array, "__cuda_array_interface__"));
 
     py::array_t<int> received_numpy_array = cp.attr("asnumpy")(received_cupy_array).cast<py::array_t<int>>();
     py::array_t<int> sent_numpy_array = cp.attr("asnumpy")(cupy_array).cast<py::array_t<int>>();
