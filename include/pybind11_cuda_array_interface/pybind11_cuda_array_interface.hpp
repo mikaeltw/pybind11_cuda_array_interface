@@ -202,21 +202,24 @@ public:
             return src.py_obj;
         }
 
+        CUdeviceptr deviceptr;
+        checkCudaErrors(cuPointerGetAttribute(&deviceptr, CU_POINTER_ATTRIBUTE_DEVICE_POINTER, src.ptr()));
+
+        py::dict interface;
+
+        interface["shape"] = py::tuple(py::cast(src.shape));
+        interface["typestr"] = py::str(py::cast(src.typestr));
+        interface["data"] = py::make_tuple(deviceptr, src.readonly);
+        interface["version"] = 3;
+
         // Assuming src was created in C++, src.handle owns the CUDA memory and should
         // be wrapped in a py::capsule to transfer ownership to Python.
         py::capsule caps(src.handle.get(), [](void* p) {
             delete reinterpret_cast<cai::cuda_memory_handle*>(p);
         });
 
-        CUdeviceptr devptr;
-        checkCudaErrors(cuPointerGetAttribute(&devptr, CU_POINTER_ATTRIBUTE_DEVICE_POINTER, src.ptr()));
-
-        py::dict interface;
-
-        interface["shape"] = py::tuple(py::cast(src.shape));
-        interface["typestr"] = py::str(py::cast(src.typestr));
-        interface["data"] = py::make_tuple(reinterpret_cast<unsigned long long>(src.ptr()), src.readonly);
-        interface["version"] = 3;
+        // Null out the cuda_memory_handle pointer in the shared_ptr to prevent it from being freed when src is destroyed.
+        const_cast<std::shared_ptr<cai::cuda_memory_handle>&>(src.handle).reset();
 
         // Create an instance of a Python object that can hold arbitrary attributes
         py::object types = py::module::import("types");
