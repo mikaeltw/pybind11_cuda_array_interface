@@ -22,7 +22,6 @@ set_if_not_defined(CXX_MVERSION 14)
 cmake_minimum_required(VERSION ${CMAKE_MVERSION} FATAL_ERROR)
 project(pybind11_cuda_array_interface LANGUAGES CUDA CXX)
 
-set_if_not_defined(CMAKE_CXX_COMPILER /usr/bin/g++)
 set(PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(${PROJECT_NAME}_VERSION ${PACKAGE_MVERSION})
 set(CMAKE_VERBOSE_MAKEFILE ON)

@@ -38,10 +38,11 @@ jobs:
         source venv/bin/activate
         python -m pip install -U pip>=22.3
 
-    - name: Install pybind11_cuda_array_interface for linting
+    - name: Install dependencies for linting
       run: |
         source venv/bin/activate
-        python -m pip install .[test]
+        python -m pip install toml
+        python linting/install_linters.py
 
     - name: Run flake8
       run: |
