@@ -39,6 +39,9 @@ repository = "https://github.com/mikaeltw/pybind11_cuda_array_interface"
 test = [
     "pytest>=2.7.3",
     "numpy>=1.23",
+    "flake8>=5.0.4",
+    "Flake8-pyproject>=1.2.3",
+    "black>=22.1.0",
 ]
 
 [tool.setuptools_scm]
@@ -67,3 +70,13 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 
+[tool.flake8]
+max-line-length = 120
+show_source = true
+filename = ["*.py",]
+exclude = [".git", "__pycache__", "thirdparty", "build", ".env", ".github", "dist", ".eggs", "*.egg", "_skbuild",]
+ignore = ["W503",]
+count = true
+
+[tool.black]
+line-length = 120
