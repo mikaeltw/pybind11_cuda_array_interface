@@ -1,0 +1,54 @@
+name: Linting
+
+
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+
+
+jobs:
+  linting:
+    name: Run linting tools
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+
+    - name: Create Python venv
+      run: |
+        python -m venv venv
+
+    - name: Upgrade pip
+      run: |
+        source venv/bin/activate
+        python -m pip install -U pip>=22.3
+
+    - name: Install pybind11_cuda_array_interface for linting
+      run: |
+        source venv/bin/activate
+        BUILD_GTESTS=ON BUILD_PYTESTS=ON python -m pip install .[test]
+
+    - name: Run flake8
+      run: |
+        source venv/bin/activate
+        python -m flake8
+
+    - name: Run black
+      run: |
+        source venv/bin/activate
+        python -m black .
