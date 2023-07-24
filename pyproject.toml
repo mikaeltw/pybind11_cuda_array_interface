@@ -32,6 +32,9 @@ dependencies = []
 license = {file = "LICENSE"}
 dynamic = ["version",]
 
+[tool.setuptools.packages]
+find = {}
+
 [project.urls]
 repository = "https://github.com/mikaeltw/pybind11_cuda_array_interface"
 
