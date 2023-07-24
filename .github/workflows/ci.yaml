@@ -116,7 +116,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: pycai_version
-        path: version.py
+        path: pybind11_cuda_array_interface/version.py
 
     - name: Store the source build
       uses: actions/upload-artifact@v3
