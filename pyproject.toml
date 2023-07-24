@@ -77,7 +77,7 @@ filterwarnings = [
 max-line-length = 120
 show_source = true
 filename = ["*.py",]
-exclude = [".git", "__pycache__", "thirdparty", "build", ".env", ".github", "dist", ".eggs", "*.egg", "_skbuild",]
+exclude = [".git", "__pycache__", "thirdparty", "build", ".env", ".github", "dist", ".eggs", "*.egg", "_skbuild", "venv"]
 ignore = ["W503",]
 count = true
 
