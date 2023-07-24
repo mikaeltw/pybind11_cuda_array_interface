@@ -41,7 +41,7 @@ jobs:
     - name: Install pybind11_cuda_array_interface for linting
       run: |
         source venv/bin/activate
-        BUILD_GTESTS=ON BUILD_PYTESTS=ON python -m pip install .[test]
+        python -m pip install .[test]
 
     - name: Run flake8
       run: |
