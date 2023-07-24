@@ -45,7 +45,7 @@ test = [
 fallback_version = "0.0.0"
 version_scheme = "no-guess-dev"
 local_scheme = "no-local-version"
-write_to = "version.py"
+write_to = "pybind11_cuda_array_interface/version.py"
 
 [tool.pytest.ini_options]
 testpaths = [
