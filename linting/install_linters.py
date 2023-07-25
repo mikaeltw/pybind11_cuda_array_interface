@@ -12,7 +12,7 @@ def install_optional_dependencies():
     optional_dependencies = pyproject["project"]["optional-dependencies"]
 
     for deps in optional_dependencies.values():
-        subprocess.run(["pip", "install"] + deps)
+        subprocess.run([sys.executable, "-m", "pip", "install"] + deps, check=True)
 
 
 if __name__ == "__main__":

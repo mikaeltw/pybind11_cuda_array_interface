@@ -58,3 +58,24 @@ jobs:
       run: |
           source venv/bin/activate
           python -m isort . --check-only
+
+    - name: Run pylint
+      run: |
+          source venv/bin/activate
+          find . \
+          \( \
+              -name '.git' \
+              -o -name '__pycache__' \
+              -o -name 'thirdparty' \
+              -o -name 'build' \
+              -o -name '.env' \
+              -o -name '.github' \
+              -o -name 'dist' \
+              -o -name '.eggs' \
+              -o -name '*.egg' \
+              -o -name '_skbuild' \
+              -o -name 'venv' \
+          \) \
+          -prune -o -name '*.py' | xargs python -m pylint
+
+
