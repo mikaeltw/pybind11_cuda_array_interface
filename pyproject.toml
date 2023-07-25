@@ -47,6 +47,7 @@ test = [
     "black>=22.1.0",
     "isort>=5.4.0",
     "pylint>=2.15.0",
+    "mypy>=1.3",
 ]
 
 [tool.setuptools_scm]
@@ -108,3 +109,26 @@ init-import = "yes"
 
 [tool.pylint.FORMAT]
 max-line-length = 120
+
+[tool.mypy]
+files = ["setup.py", "tests", "pybind11_cuda_array_interface", "linting"]
+namespace_packages = true
+allow_redefinition = true
+warn_unreachable = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "cupy.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pycai.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "setuptools_scm.*"
+ignore_missing_imports = true
+

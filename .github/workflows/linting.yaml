@@ -78,4 +78,7 @@ jobs:
           \) \
           -prune -o -name '*.py' | xargs python -m pylint
 
-
+    - name: Run mypy
+      run: |
+        source venv/bin/activate
+        python -m mypy --no-incremental

@@ -1,10 +1,11 @@
 import os
 import subprocess
+import sys
 
 import toml
 
 
-def install_optional_dependencies():
+def install_optional_dependencies() -> None:
     path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "pyproject.toml")
     with open(path) as f:
         pyproject = toml.load(f)

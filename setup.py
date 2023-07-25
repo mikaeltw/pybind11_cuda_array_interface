@@ -3,12 +3,14 @@ import re
 import shutil
 import sys
 
+from typing import List
+
 import toml
 from setuptools_scm import get_version
 from skbuild import setup
 
 
-def get_env_variable_bool_state(var_name):
+def get_env_variable_bool_state(var_name: str) -> str:
     value = os.getenv(var_name)
     if value is not None and value.lower() in ("1", "true", "yes", "on"):
         return "ON"
@@ -16,21 +18,21 @@ def get_env_variable_bool_state(var_name):
         return "OFF"
 
 
-def minimum_requirements_of_non_python_dependencies():
+def minimum_requirements_of_non_python_dependencies() -> List[str]:
     return [
         "cuda>=10.1",
         "cxx==14",
     ]
 
 
-def get_current_directory(abs_path=False):
+def get_current_directory(abs_path: bool = False) -> str:
     if abs_path:
         return os.path.dirname(os.path.realpath(__file__))
     else:
         return "."
 
 
-def get_cmake_build_dir(abs_path=False, cmake_build_dir="build"):
+def get_cmake_build_dir(abs_path: bool = False, cmake_build_dir: str = "build") -> str:
     if abs_path:
         DIRECTORY = get_current_directory()
         path = os.path.join(DIRECTORY, cmake_build_dir)
@@ -39,12 +41,12 @@ def get_cmake_build_dir(abs_path=False, cmake_build_dir="build"):
         return cmake_build_dir
 
 
-def get_version_of_package_as_dependency_str():
+def get_version_of_package_as_dependency_str() -> List[str]:
     version = get_version()
     return ["".join(("package==", version))]
 
 
-def get_dependencies_as_cmake_args():
+def get_dependencies_as_cmake_args() -> List[str]:
     # Load the pyproject.toml file
     pyproject = toml.load("pyproject.toml")
 
@@ -70,33 +72,33 @@ def get_dependencies_as_cmake_args():
     return cmake_dependency_args
 
 
-def get_testbuild_args_as_cmake_args():
+def get_testbuild_args_as_cmake_args() -> List[str]:
     return [
         "".join(("-DBUILD_GTESTS=", get_env_variable_bool_state("BUILD_GTESTS"))),
         "".join(("-DBUILD_PYTESTS=", get_env_variable_bool_state("BUILD_PYTESTS"))),
     ]
 
 
-def get_linux_cmake_args():
+def get_linux_cmake_args() -> List[str]:
     return [
         "-DCMAKE_INSTALL_LIBDIR=lib",
     ]
 
 
-def get_windows_cmake_args():
-    [
+def get_windows_cmake_args() -> List[str]:
+    return [
         "-GNinja",
         "-Dgtest_force_shared_crt=ON",
     ]
 
 
-def get_macosx_cmake_args():
+def get_macosx_cmake_args() -> List[str]:
     return [
         "-DCMAKE_INSTALL_LIBDIR=lib",
     ]
 
 
-def get_cmake_args(dev=True):
+def get_cmake_args(dev: bool = True) -> List[str]:
     cmake_args = []
     if dev:
         cmake_args += get_testbuild_args_as_cmake_args()
