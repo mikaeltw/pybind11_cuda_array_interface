@@ -44,6 +44,6 @@ jobs:
         python -m pip install toml
         python linting/install_linters.py
 
-    - name: Install dependencies for linting
+    - name: Run the linting tools
       run: |
         python linting/check_python_linting.py
