@@ -57,6 +57,8 @@ jobs:
     - name: Run mypy
       run: |
         source venv/bin/activate
+        python -m pip install scikit-build
+        python -m mypy --install-types
         python -m mypy --no-incremental
 
     - name: Run flake8
