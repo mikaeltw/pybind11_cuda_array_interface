@@ -9,6 +9,10 @@ from setuptools_scm import get_version
 from skbuild import setup
 
 
+class UnknownPlatformError(Exception):
+    pass
+
+
 def get_env_variable_bool_state(var_name: str) -> str:
     value = os.getenv(var_name)
     if value is not None and value.lower() in ("1", "true", "yes", "on"):
@@ -99,11 +103,14 @@ def get_macosx_cmake_args() -> List[str]:
 
 def get_cmake_args(dev: bool = True) -> List[str]:
     cmake_args = []
+
     if dev:
         cmake_args += get_testbuild_args_as_cmake_args()
+
     LINUX = sys.platform.startswith("linux")
     MACOS = sys.platform.startswith("darwin")
     WIN = sys.platform.startswith("win32") or sys.platform.startswith("cygwin")
+
     if LINUX:
         cmake_args += get_linux_cmake_args()
     elif MACOS:
@@ -111,7 +118,8 @@ def get_cmake_args(dev: bool = True) -> List[str]:
     elif WIN:
         cmake_args += get_windows_cmake_args()
     else:
-        assert "Unknown platform."
+        raise UnknownPlatformError("Platform not supported")
+
     cmake_args += get_dependencies_as_cmake_args()
     return cmake_args
 

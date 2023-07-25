@@ -44,43 +44,6 @@ jobs:
         python -m pip install toml
         python linting/install_linters.py
 
-    - name: Run black
+    - name: Install dependencies for linting
       run: |
-        source venv/bin/activate
-        python -m black . --check
-
-    - name: Run isort
-      run: |
-        source venv/bin/activate
-        python -m isort . --check-only
-
-    - name: Run mypy
-      run: |
-        source venv/bin/activate
-        python -m pip install scikit-build
-        python -m mypy --install-types --non-interactive
-        python -m mypy --no-incremental
-
-    - name: Run flake8
-      run: |
-        source venv/bin/activate
-        python -m flake8
-
-    - name: Run pylint
-      run: |
-          source venv/bin/activate
-          find . \
-          \( \
-              -name '.git' \
-              -o -name '__pycache__' \
-              -o -name 'thirdparty' \
-              -o -name 'build' \
-              -o -name '.env' \
-              -o -name '.github' \
-              -o -name 'dist' \
-              -o -name '.eggs' \
-              -o -name '*.egg' \
-              -o -name '_skbuild' \
-              -o -name 'venv' \
-          \) \
-          -prune -o -name '*.py' | xargs python -m pylint
+        python linting/check_python_linting.py
