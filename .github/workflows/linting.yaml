@@ -53,3 +53,8 @@ jobs:
       run: |
         source venv/bin/activate
         python -m black . --check
+
+    - name: Run isort
+      run: |
+          source venv/bin/activate
+          python -m isort . --check-only

@@ -45,6 +45,7 @@ test = [
     "flake8>=5.0.4",
     "Flake8-pyproject>=1.2.3",
     "black>=22.1.0",
+    "isort>=5.4.0",
 ]
 
 [tool.setuptools_scm]
@@ -83,3 +84,13 @@ count = true
 
 [tool.black]
 line-length = 120
+
+[tool.isort]
+profile = "black"
+skip =[".git", "__pycache__", "thirdparty", "build", ".env", ".github", "dist", ".eggs", "*.egg", "_skbuild", "venv"]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+line_length = 120

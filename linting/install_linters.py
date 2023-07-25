@@ -1,6 +1,7 @@
-import toml
-import subprocess
 import os
+import subprocess
+
+import toml
 
 
 def install_optional_dependencies():

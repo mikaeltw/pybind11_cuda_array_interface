@@ -1,12 +1,11 @@
 import os
-import toml
 import re
-import sys
 import shutil
+import sys
 
-
-from skbuild import setup
+import toml
 from setuptools_scm import get_version
+from skbuild import setup
 
 
 def get_env_variable_bool_state(var_name):
