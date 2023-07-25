@@ -52,4 +52,4 @@ jobs:
     - name: Run black
       run: |
         source venv/bin/activate
-        python -m black .
+        python -m black . --check

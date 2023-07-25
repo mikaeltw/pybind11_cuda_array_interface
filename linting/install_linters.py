@@ -8,10 +8,10 @@ def install_optional_dependencies():
     with open(path) as f:
         pyproject = toml.load(f)
 
-    optional_dependencies = pyproject['project']['optional-dependencies']
+    optional_dependencies = pyproject["project"]["optional-dependencies"]
 
     for deps in optional_dependencies.values():
-        subprocess.run(['pip', 'install'] + deps)
+        subprocess.run(["pip", "install"] + deps)
 
 
 if __name__ == "__main__":
