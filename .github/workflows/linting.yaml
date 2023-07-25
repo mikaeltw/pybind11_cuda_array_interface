@@ -44,11 +44,6 @@ jobs:
         python -m pip install toml
         python linting/install_linters.py
 
-    - name: Run flake8
-      run: |
-        source venv/bin/activate
-        python -m flake8
-
     - name: Run black
       run: |
         source venv/bin/activate
@@ -56,8 +51,18 @@ jobs:
 
     - name: Run isort
       run: |
-          source venv/bin/activate
-          python -m isort . --check-only
+        source venv/bin/activate
+        python -m isort . --check-only
+
+    - name: Run mypy
+      run: |
+        source venv/bin/activate
+        python -m mypy --no-incremental
+
+    - name: Run flake8
+      run: |
+        source venv/bin/activate
+        python -m flake8
 
     - name: Run pylint
       run: |
@@ -77,8 +82,3 @@ jobs:
               -o -name 'venv' \
           \) \
           -prune -o -name '*.py' | xargs python -m pylint
-
-    - name: Run mypy
-      run: |
-        source venv/bin/activate
-        python -m mypy --no-incremental
