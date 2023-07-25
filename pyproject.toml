@@ -32,6 +32,9 @@ dependencies = []
 license = {file = "LICENSE"}
 dynamic = ["version",]
 
+[tool.setuptools.packages]
+find = {}
+
 [project.urls]
 repository = "https://github.com/mikaeltw/pybind11_cuda_array_interface"
 
@@ -39,6 +42,15 @@ repository = "https://github.com/mikaeltw/pybind11_cuda_array_interface"
 test = [
     "pytest>=2.7.3",
     "numpy>=1.23",
+    "flake8>=5.0.4",
+    "Flake8-pyproject>=1.2.3",
+    "black>=22.1.0",
+    "isort>=5.4.0",
+    "pylint>=2.15.0",
+    "mypy>=1.3",
+    "scikit-build>=0.13",
+    "bandit>=1.7.3",
+    "toml",
 ]
 
 [tool.setuptools_scm]
@@ -67,3 +79,62 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 
+[tool.flake8]
+max-line-length = 120
+show_source = true
+filename = ["*.py",]
+exclude = [".git", "__pycache__", "thirdparty", "build", ".env", ".github", "dist", ".eggs", "*.egg", "_skbuild", "venv"]
+ignore = ["W503",]
+count = true
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+skip = [".git", "__pycache__", "thirdparty", "build", ".env", ".github", "dist", ".eggs", "*.egg", "_skbuild", "venv"]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+line_length = 120
+
+[tool.pylint.MASTER]
+ignore = [".git", "__pycache__", "thirdparty", "build", ".env", ".github", "dist", ".eggs", "*.egg", "_skbuild", "venv"]
+
+[tool.pylint."messages control"]
+disable = "all"
+enable = ["W0101", "R0913", "R0914", "R0915", "R0911", "R0912", "W0120", "C0112", "W0604", "W0611", "W1510"]
+
+[tool.pylint.variables]
+init-import = "yes"
+
+[tool.pylint.FORMAT]
+max-line-length = 120
+
+[tool.mypy]
+files = ["setup.py", "tests", "pybind11_cuda_array_interface", "linting"]
+namespace_packages = true
+allow_redefinition = true
+warn_unreachable = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "cupy.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pycai.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "setuptools_scm.*"
+ignore_missing_imports = true
+
+[tool.bandit]
+exclude_dirs = [".git", "__pycache__", "thirdparty", "build", ".env", ".github", "dist", ".eggs", "*.egg", "_skbuild", "venv"]
+skips = ["B101", "B404", "B603"]

@@ -1,0 +1,49 @@
+name: Linting
+
+
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+
+
+jobs:
+  linting:
+    name: Run linting tools
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+
+    - name: Create Python venv
+      run: |
+        python -m venv venv
+
+    - name: Upgrade pip
+      run: |
+        source venv/bin/activate
+        python -m pip install -U pip>=22.3
+
+    - name: Install dependencies for linting
+      run: |
+        source venv/bin/activate
+        python -m pip install toml
+        python linting/install_linters.py
+
+    - name: Run the linting tools
+      run: |
+        python linting/check_python_linting.py
