@@ -93,6 +93,21 @@ namespace cai {
                 return handle->ptr;
             }
 
+            template <typename T>
+            void check_dtype() {
+                py::dtype expected_dtype = py::dtype::of<T>();
+                py::dtype dt(this->typestr);
+
+                if (!expected_dtype.is(dt)) {
+                    std::stringstream error_ss;
+                    error_ss << "Mismatching dtypes. " << "Expected the dtype: "
+                             << py::str(expected_dtype).cast<std::string>() << " corresponding"
+                             << " to a C++ " << typeid(T).name() << " which is not compatible "
+                             << "with the supplied dtype " << py::str(dt).cast<std::string>() << "\n";
+                    throw std::runtime_error(error_ss.str());
+                }
+            }
+
             cuda_array_t() {};
 
             friend struct py::detail::type_caster<cuda_array_t>;
@@ -120,19 +135,17 @@ namespace cai {
 
             template <typename T>
             T* get_compatible_typed_pointer() {
-                py::dtype expected_dtype = py::dtype::of<T>();
-                py::dtype dt(this->typestr);
-
-                if (!expected_dtype.is(dt)) {
-                    std::stringstream error_ss;
-                    error_ss << "Mismatching dtypes. " << "Expected the dtype: "
-                            << py::str(expected_dtype).cast<std::string>() << " corresponding"
-                            << " to a C++ " << typeid(T).name() << " which is not compatible "
-                            << "with the supplied dtype " << py::str(dt).cast<std::string>() << "\n";
-                    throw std::runtime_error(error_ss.str());
+                if (!readonly) {
+                    check_dtype<T>();
+                    return reinterpret_cast<T*>(this->ptr());
                 }
+                throw std::runtime_error("Attempt to modify instance of cuda_array_t with attribute readonly=true");
+            }
 
-                return reinterpret_cast<T*>(this->ptr());
+            template <typename T>
+            const T* get_compatible_typed_pointer() const {
+                check_dtype<T>();
+                return reinterpret_cast<const T*>(this->ptr());
             }
     };
 
