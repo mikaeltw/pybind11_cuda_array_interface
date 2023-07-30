@@ -13,6 +13,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
+#include <pybind11/detail/descr.h>
 
 #include <functional>
 #include <iostream>
@@ -49,9 +50,10 @@ namespace cuerrutil {
 namespace cai {
 
     //Forward declarations
+    template<typename T>
     struct cuda_array_t;
-    //template <> struct py::detail::type_caster<cuda_array_t>;
 
+    template<typename T>
     struct cuda_memory_handle {
         private:
             CUdeviceptr ptr;
@@ -71,9 +73,10 @@ namespace cai {
             cuda_memory_handle(CUdeviceptr ptr, std::function<void(CUdeviceptr)> deleter)
                 : ptr(ptr), deleter(deleter) {}
 
-            friend struct cuda_array_t;
+
+            friend struct cuda_array_t<T>;
             friend class CudaArrayInterfaceTest;
-            friend struct py::detail::type_caster<cuda_array_t>;
+            friend struct py::detail::type_caster<cuda_array_t<T>>;
 
         public:
             ~cuda_memory_handle() {
@@ -88,20 +91,20 @@ namespace cai {
             }
     };
 
+    template <typename T>
     struct cuda_array_t {
         private:
-            std::shared_ptr<cuda_memory_handle> handle;
+            std::shared_ptr<cuda_memory_handle<T>> handle;
             std::vector<size_t> shape;
             std::string typestr;
             bool readonly;
             int version;
-            py::object py_obj;
+            py::object py_obj{py::none()};
 
             CUdeviceptr ptr() const {
                 return handle->ptr;
             }
 
-            template <typename T>
             void check_dtype() const {
                 py::dtype expected_dtype = py::dtype::of<T>();
                 py::dtype dt(this->typestr);
@@ -118,10 +121,26 @@ namespace cai {
 
             cuda_array_t() {};
 
+            void make_cuda_array_t() {
+                typestr = py::format_descriptor<T>::format();
+                std::cout << "typestr=" << typestr << "\n";
+                CUdeviceptr deviceptr;
+                checkCudaErrors(cuMemAlloc(&deviceptr, size_of_shape() * sizeof(T)));
+                handle = cuda_memory_handle<T>::make_shared_handle(deviceptr);
+            };
+
             friend class CudaArrayInterfaceTest;
-            friend struct py::detail::type_caster<cuda_array_t>;
+            friend struct py::detail::type_caster<cuda_array_t<T>>;
 
         public:
+
+            cuda_array_t(const std::vector<size_t>& shape,
+                         const bool readonly=false,
+                         const int version=3) : shape(shape),
+                                                readonly(readonly),
+                                                version(version) {this->make_cuda_array_t();
+                                                };
+
             const std::vector<size_t>& get_shape() {
                 return shape;
             }
@@ -142,27 +161,38 @@ namespace cai {
                 return std::accumulate(shape.begin(), shape.end(), static_cast<std::size_t>(1), std::multiplies<>());
             }
 
-            template <typename T>
             T* get_compatible_typed_pointer() {
                 if (!readonly) {
-                    check_dtype<T>();
+                    check_dtype();
                     return reinterpret_cast<T*>(this->ptr());
                 }
-                throw std::runtime_error("Attempt to modify instance of cuda_array_t with attribute readonly=true");
+                throw std::runtime_error("Attempt to modify instance of cuda_array_t<T> with attribute readonly=true");
             }
 
-            template <typename T>
             const T* get_compatible_typed_pointer() const {
-                check_dtype<T>();
+                check_dtype();
                 return reinterpret_cast<const T*>(this->ptr());
             }
     };
 
 }
 
-template <> struct py::detail::type_caster<cai::cuda_array_t> {
+namespace pybind11 {
+    namespace detail {
+        template <typename T>
+        struct handle_type_name<cai::cuda_array_t<T>> {
+            static constexpr auto name
+                = const_name("cai::cuda_array_t[") + npy_format_descriptor<T>::name + const_name("]");
+        };
+    }
+}
+
+
+template <typename T>
+struct py::detail::type_caster<cai::cuda_array_t<T>> {
 public:
-    PYBIND11_TYPE_CASTER(cai::cuda_array_t, _("cai::cuda_array_t"));
+    using type = cai::cuda_array_t<T>;
+    PYBIND11_TYPE_CASTER(cai::cuda_array_t<T>, py::detail::handle_type_name<type>::name);
 
     // Python -> C++ conversion
     bool load(py::handle src, bool) {
@@ -201,7 +231,7 @@ public:
         CUdeviceptr deviceptr;
         checkCudaErrors(cuPointerGetAttribute(&deviceptr, CU_POINTER_ATTRIBUTE_DEVICE_POINTER, inputptr));
 
-        value.handle = cai::cuda_memory_handle::make_shared_handle(deviceptr, [](CUdeviceptr){});
+        value.handle = cai::cuda_memory_handle<T>::make_shared_handle(deviceptr, [](CUdeviceptr){});
 
         value.readonly = data[1].cast<bool>();
 
@@ -212,7 +242,7 @@ public:
     }
 
     // C++ -> Python conversion
-    static py::handle cast(const cai::cuda_array_t& src, return_value_policy /* policy */, handle /* parent */) {
+    static py::handle cast(const cai::cuda_array_t<T>& src, return_value_policy /* policy */, handle /* parent */) {
         CUcontext ctx;
         checkCudaErrors(cuCtxGetCurrent(&ctx));
         if (!ctx) {
@@ -237,11 +267,11 @@ public:
         // Assuming src was created in C++, src.handle owns the CUDA memory and should
         // be wrapped in a py::capsule to transfer ownership to Python.
         py::capsule caps(src.handle.get(), [](void* p) {
-            delete reinterpret_cast<cai::cuda_memory_handle*>(p);
+            delete reinterpret_cast<cai::cuda_memory_handle<T>*>(p);
         });
 
         // Null out the cuda_memory_handle pointer in the shared_ptr to prevent it from being freed when src is destroyed.
-        const_cast<std::shared_ptr<cai::cuda_memory_handle>&>(src.handle).reset();
+        const_cast<std::shared_ptr<cai::cuda_memory_handle<T>>&>(src.handle).reset();
 
         // Create an instance of a Python object that can hold arbitrary attributes
         py::object types = py::module::import("types");
