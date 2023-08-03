@@ -65,7 +65,6 @@ if(BUILD_GTESTS)
                 ${GTEST_BOTH_LIBRARIES}
                 pybind11::pybind11
                 pybind11::embed
-                cuda
                 CUDA::cudart
     )
     target_include_directories(${EXECNAME} PRIVATE
@@ -84,7 +83,7 @@ if(BUILD_PYTESTS)
     set(MODULENAME pycai)
     set(CPPSOURCES sources/pytest_pybind11_cuda_array_interface.cpp)
     set(CUSOURCES sources/test_kernels.cu)
-    set(LIBS Python3::Python pybind11::pybind11 pybind11::embed cuda CUDA::cudart)
+    set(LIBS Python3::Python pybind11::pybind11 pybind11::embed CUDA::cudart)
 
     # TODO: The following module from pybind11 does not respect the CMAKE_CUDA_ARCHITECTURES
     # variable which handles which archs to build and link to. This results in missing linking

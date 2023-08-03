@@ -41,22 +41,14 @@ namespace cai {
     class CudaArrayInterfaceTest : public ::testing::Test {
         protected:
             // The test class is declared as a friend inside cuda_array_t<T> and cuda_memory_handle<T>.
-            CUdevice device;
-            CUcontext context;
-            CUdeviceptr deviceptr;
+            void* deviceptr;
 
-            void SetUp() override {
-                checkCudaErrors(cuInit(0));
-                checkCudaErrors(cuDeviceGet(&device, 0));
-                checkCudaErrors(cuCtxCreate(&context, 0, device));
-            }
+            void SetUp() override {}
 
-            void TearDown() override {
-                checkCudaErrors(cuCtxDestroy(context));
-            }
+            void TearDown() override {}
 
             void allocate_deviceptr(size_t size) {
-                checkCudaErrors(cuMemAlloc(&deviceptr, size));
+                checkCudaErrors(cudaMalloc(&deviceptr, size));
             }
 
             template <typename T>

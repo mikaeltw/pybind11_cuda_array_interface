@@ -23,7 +23,11 @@ cai::cuda_array_t<T> receive_and_return_cuda_array_interface(cai::cuda_array_t<T
 
 template <typename T>
 cai::cuda_array_t<T> return_cuda_array_interface() {
-    cai::cuda_array_t<T> s({5});
+    std::vector<T> vec = {1.0, 2.0, 3.0, 4.0, 5.0};
+
+    cai::cuda_array_t<T> s({vec.size()});
+    checkCudaErrors(cudaMemcpy(s.get_compatible_typed_pointer(), vec.data(), vec.size() * sizeof(T), cudaMemcpyHostToDevice));
+
     return s;
 }
 
@@ -35,6 +39,3 @@ PYBIND11_MODULE(pycai, module) {
     module.def("return_cuda_array_interface", &return_cuda_array_interface<float>);
 
 }
-
-//m.def("create_cuda_array", &create_cuda_array, py::return_value_policy::take_ownership, py::keep_alive<0, 1>());
-
