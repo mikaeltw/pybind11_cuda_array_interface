@@ -18,17 +18,15 @@
 #include <functional>
 #include <iostream>
 
-#include <cuda.h>
+#include <cuda_runtime.h>
 
 namespace py = pybind11;
 
 namespace cuerrutil {
 
-    inline const char *enum_to_string(const CUresult& error)
+    inline const char *enum_to_string(const cudaError_t& error)
     {
-        const char *ret = nullptr;
-        cuGetErrorName(error, &ret);
-        return ret;
+        return cudaGetErrorName(error);
     }
 
     template <typename T>
@@ -56,21 +54,21 @@ namespace cai {
     template<typename T>
     struct cuda_memory_handle {
         private:
-            CUdeviceptr ptr;
-            std::function<void(CUdeviceptr)> deleter;
+            void* ptr;
+            std::function<void(void*)> deleter;
 
             // Constructor for C++-created objects (default deleter)
-            cuda_memory_handle(CUdeviceptr ptr)
-                : ptr(ptr), deleter([](CUdeviceptr ptr) {CUresult result = cuMemFree(ptr);
-                                                         if (result == CUDA_ERROR_INVALID_VALUE) {
-                                                             std::cout << "cuMemFree was called on a null/uninitialised pointer\n";
+            cuda_memory_handle(void* ptr)
+                : ptr(ptr), deleter([](void* ptr) {cudaError_t result = cudaFree(ptr);
+                                                         if (result == cudaErrorInvalidValue) {
+                                                             std::cout << "cudaFree was called on a null/uninitialised pointer\n";
                                                          }
                                                          checkCudaErrors(result);
                                                         }
                                    ) {}
 
             // Constructor for Python-created objects (explicit do-nothing deleter)
-            cuda_memory_handle(CUdeviceptr ptr, std::function<void(CUdeviceptr)> deleter)
+            cuda_memory_handle(void* ptr, std::function<void(void*)> deleter)
                 : ptr(ptr), deleter(deleter) {}
 
 
@@ -101,7 +99,7 @@ namespace cai {
             int version;
             py::object py_obj{py::none()};
 
-            CUdeviceptr ptr() const {
+            void* ptr() const {
                 return handle->ptr;
             }
 
@@ -119,13 +117,28 @@ namespace cai {
                 }
             }
 
+            std::string determine_endianness() {
+                constexpr uint32_t number = 1;
+                const auto* bytePtr = reinterpret_cast<const uint8_t*>(&number);
+
+                auto firstByte = *bytePtr;
+                auto lastByte = *(bytePtr + sizeof(uint32_t) - 1);
+
+                if (firstByte == 1 && lastByte == 0) {
+                    return "<"; // little-endian
+                } else if (firstByte == 0 && lastByte == 1) {
+                    return ">"; // big-endian
+                } else {
+                    return "|"; // not-relevant
+                }
+            }
+
             cuda_array_t() {};
 
             void make_cuda_array_t() {
-                typestr = py::format_descriptor<T>::format();
-                std::cout << "typestr=" << typestr << "\n";
-                CUdeviceptr deviceptr;
-                checkCudaErrors(cuMemAlloc(&deviceptr, size_of_shape() * sizeof(T)));
+                typestr = determine_endianness() + py::format_descriptor<T>::format() + std::to_string(sizeof(T));
+                void* deviceptr;
+                checkCudaErrors(cudaMalloc(&deviceptr, size_of_shape() * sizeof(T)));
                 handle = cuda_memory_handle<T>::make_shared_handle(deviceptr);
             };
 
@@ -133,7 +146,6 @@ namespace cai {
             friend struct py::detail::type_caster<cuda_array_t<T>>;
 
         public:
-
             cuda_array_t(const std::vector<size_t>& shape,
                          const bool readonly=false,
                          const int version=3) : shape(shape),
@@ -175,6 +187,21 @@ namespace cai {
             }
     };
 
+    template <typename T>
+    struct cuda_shared_ptr_holder {
+        private:
+            std::shared_ptr<cuda_memory_handle<T>> holder_ptr;
+
+            cuda_shared_ptr_holder(const std::shared_ptr<cuda_memory_handle<T>>& sharedPtr) : holder_ptr(sharedPtr) {}
+
+            // Static factory method that encapsulates a shared_ptr<cuda_memory_handle<T>>
+            static cuda_shared_ptr_holder* create(const std::shared_ptr<cuda_memory_handle<T>>& sharedPtr) {
+                return new cuda_shared_ptr_holder(sharedPtr);
+            }
+
+            friend struct py::detail::type_caster<cuda_array_t<T>>;
+    };
+
 }
 
 namespace pybind11 {
@@ -186,7 +213,6 @@ namespace pybind11 {
         };
     }
 }
-
 
 template <typename T>
 struct py::detail::type_caster<cai::cuda_array_t<T>> {
@@ -227,11 +253,9 @@ public:
 
         //Extract the data key from the cuda array dict
         py::tuple data = iface_dict["data"].cast<py::tuple>();
-        CUdeviceptr inputptr = data[0].cast<CUdeviceptr>();
-        CUdeviceptr deviceptr;
-        checkCudaErrors(cuPointerGetAttribute(&deviceptr, CU_POINTER_ATTRIBUTE_DEVICE_POINTER, inputptr));
+        void* inputptr = reinterpret_cast<void*>(data[0].cast<uintptr_t>());
 
-        value.handle = cai::cuda_memory_handle<T>::make_shared_handle(deviceptr, [](CUdeviceptr){});
+        value.handle = cai::cuda_memory_handle<T>::make_shared_handle(inputptr, [](void*){});
 
         value.readonly = data[1].cast<bool>();
 
@@ -243,42 +267,31 @@ public:
 
     // C++ -> Python conversion
     static py::handle cast(const cai::cuda_array_t<T>& src, return_value_policy /* policy */, handle /* parent */) {
-        CUcontext ctx;
-        checkCudaErrors(cuCtxGetCurrent(&ctx));
-        if (!ctx) {
-            throw std::runtime_error("Improper current CUDA context");
-        }
 
         // If py_obj of src is set it means it originates from Python and the object can thus be released.
         if (!src.py_obj.is_none()) {
             return src.py_obj;
         }
 
-        CUdeviceptr deviceptr;
-        checkCudaErrors(cuPointerGetAttribute(&deviceptr, CU_POINTER_ATTRIBUTE_DEVICE_POINTER, src.ptr()));
-
         py::dict interface;
 
         interface["shape"] = py::tuple(py::cast(src.shape));
         interface["typestr"] = py::str(py::cast(src.typestr));
-        interface["data"] = py::make_tuple(deviceptr, src.readonly);
+        interface["data"] = py::make_tuple(py::int_(reinterpret_cast<uintptr_t>(src.ptr())), src.readonly);
         interface["version"] = 3;
 
         // Assuming src was created in C++, src.handle owns the CUDA memory and should
         // be wrapped in a py::capsule to transfer ownership to Python.
-        py::capsule caps(src.handle.get(), [](void* p) {
-            delete reinterpret_cast<cai::cuda_memory_handle<T>*>(p);
+        py::capsule caps(cai::cuda_shared_ptr_holder<T>::create(src.handle), "cuda_memory_capsule", [](void* p) {
+            delete reinterpret_cast<cai::cuda_shared_ptr_holder<T>*>(p);
         });
-
-        // Null out the cuda_memory_handle pointer in the shared_ptr to prevent it from being freed when src is destroyed.
-        const_cast<std::shared_ptr<cai::cuda_memory_handle<T>>&>(src.handle).reset();
 
         // Create an instance of a Python object that can hold arbitrary attributes
         py::object types = py::module::import("types");
         py::object caio = types.attr("SimpleNamespace")();
         caio.attr("__cuda_array_interface__") = interface;
 
-        // Make the SimpleNamespace object owns the capsule to prevent it from being garbage collected
+        // Make the SimpleNamespace object own the capsule to prevent it from being garbage collected.
         caio.attr("_capsule") = caps;
 
         return caio.release();
