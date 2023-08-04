@@ -32,38 +32,32 @@ inline py::module create_module(const std::string& module_name) {
 
 namespace cai {
 
-    inline const cuda_array_t& send_and_receive_cuda_array_interface(const cuda_array_t& ca)
+    template <typename T>
+    inline const cuda_array_t<T>& send_and_receive_cuda_array_interface(const cuda_array_t<T>& ca)
     {
         return ca;
     }
 
     class CudaArrayInterfaceTest : public ::testing::Test {
         protected:
-            // The test class is declared as a friend inside cuda_array_t and cuda_memory_handle.
-            CUdevice device;
-            CUcontext context;
-            CUdeviceptr deviceptr;
+            // The test class is declared as a friend inside cuda_array_t<T> and cuda_memory_handle<T>.
+            void* deviceptr;
 
-            void SetUp() override {
-                checkCudaErrors(cuInit(0));
-                checkCudaErrors(cuDeviceGet(&device, 0));
-                checkCudaErrors(cuCtxCreate(&context, 0, device));
-            }
+            void SetUp() override {}
 
-            void TearDown() override {
-                checkCudaErrors(cuCtxDestroy(context));
-            }
+            void TearDown() override {}
 
             void allocate_deviceptr(size_t size) {
-                checkCudaErrors(cuMemAlloc(&deviceptr, size));
+                checkCudaErrors(cudaMalloc(&deviceptr, size));
             }
 
-            cuda_array_t create_cuda_array(bool readonly = false) {
-                allocate_deviceptr(1024 * sizeof(float));
-                cuda_array_t arr;
-                arr.handle = cuda_memory_handle::make_shared_handle(deviceptr);
+            template <typename T>
+            cuda_array_t<T> create_cuda_array(bool readonly = false) {
+                allocate_deviceptr(1024 * sizeof(T));
+                cuda_array_t<T> arr;
+                arr.handle = cuda_memory_handle<T>::make_shared_handle(deviceptr);
                 arr.readonly = readonly;
-                arr.typestr = "<f4";  // Assuming float corresponds to "<f4"
+                arr.typestr = py::format_descriptor<T>::format();
                 arr.shape = {5};
                 arr.version = 3;
                 return arr;
@@ -75,35 +69,30 @@ namespace cai {
 using cai::CudaArrayInterfaceTest;
 
 TEST_F(CudaArrayInterfaceTest, CompatibleTypeNonReadOnly) {
-    cai::cuda_array_t arr = create_cuda_array();
-    EXPECT_NO_THROW(arr.get_compatible_typed_pointer<float>());
+    auto arr = create_cuda_array<float>();
+    EXPECT_NO_THROW(arr.get_compatible_typed_pointer());
 }
 
 TEST_F(CudaArrayInterfaceTest, CompatibleTypeReadOnly) {
-    cai::cuda_array_t arr = create_cuda_array(true);
-    EXPECT_THROW(arr.get_compatible_typed_pointer<float>(), std::runtime_error);
+    auto arr = create_cuda_array<float>(true);
+    EXPECT_THROW(arr.get_compatible_typed_pointer(), std::runtime_error);
 }
 
 TEST_F(CudaArrayInterfaceTest, InCompatibleTypeReadOnly) {
-    const cai::cuda_array_t arr = create_cuda_array();
-    EXPECT_NO_THROW(arr.get_compatible_typed_pointer<float>());
+    const auto arr = create_cuda_array<float>();
+    EXPECT_NO_THROW(arr.get_compatible_typed_pointer());
 }
 
 TEST_F(CudaArrayInterfaceTest, InCompatibleTypeReadOnlySaveConst) {
-    const cai::cuda_array_t arr = create_cuda_array(true);
-    EXPECT_NO_THROW(arr.get_compatible_typed_pointer<float>());
-}
-
-TEST_F(CudaArrayInterfaceTest, IncompatibleType) {
-    cai::cuda_array_t arr = create_cuda_array();
-    EXPECT_THROW(arr.get_compatible_typed_pointer<int>(), std::runtime_error);
+    const auto arr = create_cuda_array<float>(true);
+    EXPECT_NO_THROW(arr.get_compatible_typed_pointer());
 }
 
 TEST(CudaArrayInterface, SendAndReceive) {
 
     auto m = create_module("test");
 
-    m.def("sendandreceive", &cai::send_and_receive_cuda_array_interface);
+    m.def("sendandreceive", &cai::send_and_receive_cuda_array_interface<float>);
 
     py::module cp = py::module::import("cupy");
     py::module np = py::module::import("numpy");
