@@ -59,13 +59,7 @@ namespace cai {
 
             // Constructor for C++-created objects (default deleter)
             cuda_memory_handle(void* ptr)
-                : ptr(ptr), deleter([](void* ptr) {cudaError_t result = cudaFree(ptr);
-                                                         if (result == cudaErrorInvalidValue) {
-                                                             std::cout << "cudaFree was called on a null/uninitialised pointer\n";
-                                                         }
-                                                         checkCudaErrors(result);
-                                                        }
-                                   ) {}
+                : ptr(ptr), deleter([](void* ptr) {checkCudaErrors(cudaFree(ptr));}) {}
 
             // Constructor for Python-created objects (explicit do-nothing deleter)
             cuda_memory_handle(void* ptr, std::function<void(void*)> deleter)
