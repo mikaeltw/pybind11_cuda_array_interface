@@ -1,3 +1,10 @@
+#[[
+## Copyright (c) 2021, Mikael Twengström
+## All rights reserved.
+## This file is part of pybind11_cuda_array_interface and is distributed under the
+## BSD-3 Clause License. For full terms see the included LICENSE file.
+#]]
+
 cmake_minimum_required(VERSION ${CMAKE_MVERSION} FATAL_ERROR)
 
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)

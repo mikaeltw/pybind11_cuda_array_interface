@@ -1,7 +1,13 @@
+#[[
+## Copyright (c) 2021, Mikael Twengström
+## All rights reserved.
+## This file is part of pybind11_cuda_array_interface and is distributed under the
+## BSD-3 Clause License. For full terms see the included LICENSE file.
+#]]
+
 #######################################################
 ### Set default values for version for dependencies ###
 #######################################################
-
 macro(set_if_not_defined var default_value)
     if(NOT DEFINED ${var})
         set(${var} ${default_value})
@@ -18,7 +24,6 @@ set_if_not_defined(CXX_MVERSION 14)
 ##########################
 ### Define the project ###
 ##########################
-
 cmake_minimum_required(VERSION ${CMAKE_MVERSION} FATAL_ERROR)
 project(pybind11_cuda_array_interface LANGUAGES CUDA CXX)
 
@@ -57,7 +62,6 @@ endif()
 ####################
 ### Dependencies ###
 ####################
-
 set(Python3_FIND_VIRTUALENV FIRST)
 if(NOT TARGET Python3::Interpreter OR NOT TARGET Python3::Python)
     find_package(Python3 ${PYTHON_MVERSION} REQUIRED COMPONENTS Interpreter Development)
@@ -74,7 +78,6 @@ endif()
 ############################
 ### Customise the target ###
 ############################
-
 include(GNUInstallDirs)
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib; ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 set(PYBIND11_CUDA_ARRAY_INTERFACE_HEADERS include/pybind11_cuda_array_interface/pybind11_cuda_array_interface.hpp)
@@ -90,7 +93,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${PYBIND11_CUDA_
 ##################################################################
 ### Define and build Tests - GoogleTests - Bindings for PyTest ###
 ##################################################################
-
 OPTION(BUILD_GTESTS "Build pybind11_cuda_array_interface googletests" OFF)
 OPTION(BUILD_PYTESTS "Build pybind11_cuda_array_interface bindings for pytest" OFF)
 
@@ -101,7 +103,6 @@ endif()
 #################################
 # Installation of the library ###
 #################################
-
 include(CMakePackageConfigHelpers)
 set(PYBIND11_CUDA_ARRAY_INTERFACE_CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/cmake/${PROJECT_NAME}" CACHE STRING "install path for pybind11_cuda_array_interfaceConfig.cmake")
 install(TARGETS
