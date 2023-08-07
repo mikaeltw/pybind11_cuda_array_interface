@@ -119,15 +119,14 @@ export(EXPORT
            "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake"
 )
 
-# Configure a build tree for pybind11_cuda_array_interfaceConfig.cmake.in
-set(PYBIND11_CUDA_ARRAY_INTERFACE_CONFIG_CODE "####### Expanded from \@PYBIND11_CUDA_ARRAY_INTERFACE_CONFIG_CODE\@ #######\n")
-set(PYBIND11_CUDA_ARRAY_INTERFACE_CONFIG_CODE "${PYBIND11_CUDA_ARRAY_INTERFACE_CONFIG_CODE}set(CMAKE_MODULE_PATH \"${CMAKE_CURRENT_SOURCE_DIR}/cmake;\${CMAKE_MODULE_PATH}\")\n")
-set(PYBIND11_CUDA_ARRAY_INTERFACE_CONFIG_CODE "${PYBIND11_CUDA_ARRAY_INTERFACE_CONFIG_CODE}##################################################")
+# Define and setup the build tree
+set(PYBIND11_CUDA_ARRAY_INTERFACE_CONFIG_CODE "set(CMAKE_MODULE_PATH \"${CMAKE_CURRENT_SOURCE_DIR}/cmake;\${CMAKE_MODULE_PATH}\")")
 configure_package_config_file(${PROJECT_NAME}Config.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" INSTALL_DESTINATION ${PROJECT_BINARY_DIR})
 
-# Configure a install tree for pybind11_cuda_array_interfaceConfig.cmake.in
+# Define and setup the install tree
 set(PYBIND11_CUDA_ARRAY_INTERFACE_CONFIG_CODE "")
 configure_package_config_file(${PROJECT_NAME}Config.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${PROJECT_NAME}Config.cmake" INSTALL_DESTINATION ${PYBIND11_CUDA_ARRAY_INTERFACE_CMAKECONFIG_INSTALL_DIR})
+
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake VERSION ${${PROJECT_NAME}_VERSION} COMPATIBILITY AnyNewerVersion ARCH_INDEPENDENT)
 
 install(FILES
