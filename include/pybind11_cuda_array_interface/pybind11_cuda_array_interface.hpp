@@ -1,10 +1,9 @@
-/***************************************************************************
-* Copyright (c) 2021, Mikael Twengström                                    *
-*                                                                          *
-* Distributed under the terms of the XXX License.                          *
-*                                                                          *
-* The full license is in the file LICENSE, distributed with this software. *
-****************************************************************************/
+/*
+## Copyright (c) 2021, Mikael Twengström
+## All rights reserved.
+## This file is part of pybind11_cuda_array_interface and is distributed under the
+## BSD-3 Clause License. For full terms see the included LICENSE file.
+*/
 
 
 #pragma once
