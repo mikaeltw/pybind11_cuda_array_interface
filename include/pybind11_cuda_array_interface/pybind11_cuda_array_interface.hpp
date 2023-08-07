@@ -22,6 +22,56 @@
 
 namespace py = pybind11;
 
+namespace caiexcp {
+    class BaseError : public std::runtime_error {
+        public:
+            using std::runtime_error::runtime_error;
+    };
+}
+
+#define DEFINE_ERROR_CLASS(CLASS_NAME)        \
+    class CLASS_NAME : public BaseError {     \
+        public:                               \
+            using BaseError::BaseError;       \
+    };
+
+namespace caiexcp {
+    DEFINE_ERROR_CLASS(InterfaceNotImplementedError)
+    DEFINE_ERROR_CLASS(IncompleteInterfaceError)
+    DEFINE_ERROR_CLASS(DtypeMismatchError)
+    DEFINE_ERROR_CLASS(CudaCallError)
+    DEFINE_ERROR_CLASS(ReadOnlyAccessError)
+    DEFINE_ERROR_CLASS(EndiannessDetectionError)
+    DEFINE_ERROR_CLASS(InvalidShapeError)
+    DEFINE_ERROR_CLASS(InvalidVersionError)
+    DEFINE_ERROR_CLASS(InvalidCapsuleError)
+    DEFINE_ERROR_CLASS(ObjectOwnershipError)
+    DEFINE_ERROR_CLASS(InvalidTypestrError)
+    DEFINE_ERROR_CLASS(MissingDeleterError)
+    DEFINE_ERROR_CLASS(SimpleNamespaceError)
+}
+
+#undef DEFINE_ERROR_CLASS
+
+namespace caiexcp {
+    inline void register_custom_cuda_array_interface_exceptions(py::module &module) {
+        py::register_exception<InterfaceNotImplementedError>(module, "InterfaceNotImplementedError");
+        py::register_exception<IncompleteInterfaceError>(module, "IncompleteInterfaceError");
+        py::register_exception<DtypeMismatchError>(module, "DtypeMismatchError");
+        py::register_exception<CudaCallError>(module, "CudaCallError");
+        py::register_exception<ReadOnlyAccessError>(module, "ReadOnlyAccessError");
+        py::register_exception<EndiannessDetectionError>(module, "EndiannessDetectionError");
+        py::register_exception<InvalidShapeError>(module, "InvalidShapeError");
+        py::register_exception<InvalidVersionError>(module, "InvalidVersionError");
+        py::register_exception<InvalidCapsuleError>(module, "InvalidCapsuleError");
+        py::register_exception<ObjectOwnershipError>(module, "ObjectOwnershipError");
+        py::register_exception<InvalidTypestrError>(module, "InvalidTypestrError");
+        py::register_exception<MissingDeleterError>(module, "MissingDeleterError");
+        py::register_exception<SimpleNamespaceError>(module, "SimpleNamespaceError");
+    }
+}
+
+
 namespace cuerrutil {
 
     inline const char *enum_to_string(const cudaError_t& error)
@@ -38,7 +88,7 @@ namespace cuerrutil {
                     << " code=" << static_cast<unsigned int>(result) << "(" << enum_to_string(result)
                     << ") \"" << func << "\"";
 
-            throw std::runtime_error(ss_error.str());
+            throw caiexcp::CudaCallError(ss_error.str());
         }
     }
 }
@@ -75,6 +125,10 @@ namespace cai {
                 deleter(ptr);
             }
 
+            std::function<void(void*)> get_deleter() const {
+                return deleter;
+            }
+
         protected:
             // Factory method
             template<typename... Args>
@@ -107,7 +161,7 @@ namespace cai {
                              << py::str(expected_dtype).cast<std::string>() << " corresponding"
                              << " to a C++ " << typeid(T).name() << " which is not compatible "
                              << "with the supplied dtype " << py::str(dt).cast<std::string>() << "\n";
-                    throw std::runtime_error(error_ss.str());
+                    throw caiexcp::DtypeMismatchError(error_ss.str());
                 }
             }
 
@@ -123,7 +177,8 @@ namespace cai {
                 } else if (firstByte == 0 && lastByte == 1) {
                     return ">"; // big-endian
                 } else {
-                    return "|"; // not-relevant
+                    // return "|"; // not-relevant
+                    caiexcp::EndiannessDetectionError("Unable to determine system endianness");
                 }
             }
 
@@ -172,7 +227,7 @@ namespace cai {
                     check_dtype();
                     return reinterpret_cast<T*>(this->ptr());
                 }
-                throw std::runtime_error("Attempt to modify instance of cuda_array_t<T> with attribute readonly=true");
+                throw caiexcp::ReadOnlyAccessError("Attempt to modify instance of cuda_array_t<T> with attribute readonly=true");
             }
 
             const T* get_compatible_typed_pointer() const {
@@ -195,6 +250,70 @@ namespace cai {
 
             friend struct py::detail::type_caster<cuda_array_t<T>>;
     };
+
+    void validate_typestr(const std::string& typestr) {
+        if (typestr.length() < 3) {
+            throw caiexcp::InvalidTypestrError("Invalid typestr: too short.");
+        }
+
+        // Check endianness
+        std::set<char> valid_endianness = {'<', '>', '|'};
+        if (valid_endianness.find(typestr[0]) == valid_endianness.end()) {
+            throw caiexcp::InvalidTypestrError("Invalid typestr: Invalid byte order character.");
+        }
+
+        // Check type character code
+        std::set<char> valid_type_codes = {'t', 'b', 'i', 'u', 'f', 'c', 'm', 'M', 'O', 'S', 'U', 'V'};
+        if (valid_type_codes.find(typestr[1]) == valid_type_codes.end()) {
+            throw caiexcp::InvalidTypestrError("Invalid typestr: Invalid type character code.");
+        }
+
+        // Check byte size
+        std::string byte_size_str = typestr.substr(2);
+        try {
+            const size_t byte_size = std::stoul(byte_size_str); // convert string to unsigned long
+            if (byte_size == 0) {
+                throw caiexcp::InvalidTypestrError("Invalid typestr: Byte size cannot be zero.");
+            }
+        } catch(const std::exception&) {
+            throw caiexcp::InvalidTypestrError("Invalid typestr: Invalid byte size.");
+        }
+    }
+
+    void validate_shape(const std::vector<size_t>& shape_vec) {
+        for (const auto& h : shape_vec) {
+            if (h <= 0) {
+                throw caiexcp::InvalidShapeError("All elements in 'shape' should be non-negative integers in the provided __cuda_array_interface__");
+            }
+        }
+    }
+
+    void validate_cuda_ptr(void* ptr) {
+        cudaPointerAttributes attributes;
+        checkCudaErrors(cudaPointerGetAttributes(&attributes, ptr));
+    }
+
+    template <typename T>
+    void validate_cuda_memory_handle(const std::shared_ptr<cuda_memory_handle<T>>& sptr) {
+        if (sptr.use_count() != 1) {
+            throw caiexcp::ObjectOwnershipError("cuda_memory_handle has invalid reference count!");
+        }
+        if (!static_cast<bool>(sptr->get_deleter())) {
+            throw caiexcp::MissingDeleterError("The cuda_memory_handle does not have a valid callable deleter!");
+        }
+    }
+
+    void validate_capsule(const py::capsule& vcaps) {
+        if (!vcaps) {
+            throw caiexcp::InvalidCapsuleError("Capsule creation failed.");
+        }
+        if (std::string(vcaps.name()) != "cuda_memory_capsule") {
+            throw caiexcp::InvalidCapsuleError("Capsule has an unexpected name.");
+        }
+        if (!vcaps.get_pointer()) {
+            throw caiexcp::InvalidCapsuleError("Capsule does not contain a valid pointer.");
+        }
+    }
 
 }
 
@@ -220,36 +339,45 @@ public:
         py::object obj = py::reinterpret_borrow<py::object>(src);
 
         if (!py::hasattr(obj, "__cuda_array_interface__")) {
-            throw std::runtime_error("Provided Python Object does not have a __cuda_array_interface__");
+            throw caiexcp::InterfaceNotImplementedError("Provided Python Object does not have a __cuda_array_interface__");
         }
 
         py::object interface = obj.attr("__cuda_array_interface__");
         py::dict iface_dict = interface.cast<py::dict>();
 
-        if (!iface_dict.contains("data") || !iface_dict.contains("shape") ||
-            !iface_dict.contains("typestr") || !iface_dict.contains("version")) {
-            throw std::runtime_error("At least one of the mandatory fields: data, shape, typestr or version is missing from from the provided __cuda_array_interface__");
+        std::vector<std::string> mandatory_fields = {"data", "shape", "typestr", "version"};
+
+        for (const auto& field : mandatory_fields) {
+            if (!iface_dict.contains(field)) {
+                throw caiexcp::IncompleteInterfaceError("Mandatory field " + field + " is missing from the provided __cuda_array_interface__");
+            }
         }
 
         //Extract the version key from the cuda array dict
         value.version = iface_dict["version"].cast<int>();
         if (value.version != 3) {
-            throw std::runtime_error("Unsupported __cuda_array_interface__ version != 3");
+            throw caiexcp::InvalidVersionError("Unsupported __cuda_array_interface__ version != 3");
         }
 
+        // Extract the shape and check if all elements are unsigned integers
+        py::tuple shape_tuple = iface_dict["shape"].cast<py::tuple>();
         //Extract the shape key from the cuda array dict
-        for (py::handle h : iface_dict["shape"].cast<py::tuple>()) {
+        for (py::handle h : shape_tuple) {
             value.shape.emplace_back(h.cast<size_t>());
         }
+        cai::validate_shape(value.shape);
 
         //Extract the typestr key from the cuda array dict
         value.typestr = iface_dict["typestr"].cast<std::string>();
+        cai::validate_typestr(value.typestr);
 
         //Extract the data key from the cuda array dict
         py::tuple data = iface_dict["data"].cast<py::tuple>();
         void* inputptr = reinterpret_cast<void*>(data[0].cast<uintptr_t>());
+        cai::validate_cuda_ptr(inputptr);
 
         value.handle = cai::cuda_memory_handle<T>::make_shared_handle(inputptr, [](void*){});
+        cai::validate_cuda_memory_handle<T>(value.handle);
 
         value.readonly = data[1].cast<bool>();
 
@@ -261,6 +389,11 @@ public:
 
     // C++ -> Python conversion
     static py::handle cast(const cai::cuda_array_t<T>& src, return_value_policy /* policy */, handle /* parent */) {
+
+        cai::validate_shape(src.shape);
+        cai::validate_typestr(src.typestr);
+        cai::validate_cuda_ptr(src.ptr());
+        cai::validate_cuda_memory_handle<T>(src.handle);
 
         // If py_obj of src is set it means it originates from Python and the object can thus be released.
         if (!src.py_obj.is_none()) {
@@ -279,10 +412,16 @@ public:
         py::capsule caps(cai::cuda_shared_ptr_holder<T>::create(src.handle), "cuda_memory_capsule", [](void* p) {
             delete reinterpret_cast<cai::cuda_shared_ptr_holder<T>*>(p);
         });
+        cai::validate_capsule(caps);
 
         // Create an instance of a Python object that can hold arbitrary attributes
-        py::object types = py::module::import("types");
-        py::object caio = types.attr("SimpleNamespace")();
+        py::object caio{py::none()};
+        try {
+            py::object types = py::module::import("types");
+            caio = types.attr("SimpleNamespace")();
+        } catch (const std::exception& e) {
+            throw caiexcp::SimpleNamespaceError("Failed to import the types module and create a SimpleNamespace object.");
+        }
         caio.attr("__cuda_array_interface__") = interface;
 
         // Make the SimpleNamespace object own the capsule to prevent it from being garbage collected.

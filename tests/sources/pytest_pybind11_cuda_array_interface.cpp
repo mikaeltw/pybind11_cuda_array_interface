@@ -33,6 +33,7 @@ cai::cuda_array_t<T> return_cuda_array_interface() {
 
 PYBIND11_MODULE(pycai, module) {
     module.doc() = "Test module for __cuda_array_interface__";
+    caiexcp::register_custom_cuda_array_interface_exceptions(module);
 
     module.def("saxpy", &saxpy<float>);
     module.def("receive_and_return_cuda_array_interface", &receive_and_return_cuda_array_interface<float>);
