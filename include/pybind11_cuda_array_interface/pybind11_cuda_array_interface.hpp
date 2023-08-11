@@ -48,25 +48,33 @@ namespace caiexcp {
     DEFINE_ERROR_CLASS(InvalidTypestrError)
     DEFINE_ERROR_CLASS(MissingDeleterError)
     DEFINE_ERROR_CLASS(SimpleNamespaceError)
+    DEFINE_ERROR_CLASS(UnRegCudaTypeError)
 }
 
 #undef DEFINE_ERROR_CLASS
 
 namespace caiexcp {
+
+    template <typename... Args>
+    void register_errors(py::module &module) {
+        (py::register_exception<Args>(module, typeid(Args).name()), ...);
+    }
+
     inline void register_custom_cuda_array_interface_exceptions(py::module &module) {
-        py::register_exception<InterfaceNotImplementedError>(module, "InterfaceNotImplementedError");
-        py::register_exception<IncompleteInterfaceError>(module, "IncompleteInterfaceError");
-        py::register_exception<DtypeMismatchError>(module, "DtypeMismatchError");
-        py::register_exception<CudaCallError>(module, "CudaCallError");
-        py::register_exception<ReadOnlyAccessError>(module, "ReadOnlyAccessError");
-        py::register_exception<EndiannessDetectionError>(module, "EndiannessDetectionError");
-        py::register_exception<InvalidShapeError>(module, "InvalidShapeError");
-        py::register_exception<InvalidVersionError>(module, "InvalidVersionError");
-        py::register_exception<InvalidCapsuleError>(module, "InvalidCapsuleError");
-        py::register_exception<ObjectOwnershipError>(module, "ObjectOwnershipError");
-        py::register_exception<InvalidTypestrError>(module, "InvalidTypestrError");
-        py::register_exception<MissingDeleterError>(module, "MissingDeleterError");
-        py::register_exception<SimpleNamespaceError>(module, "SimpleNamespaceError");
+        register_errors<InterfaceNotImplementedError,
+                        IncompleteInterfaceError,
+                        DtypeMismatchError,
+                        CudaCallError,
+                        ReadOnlyAccessError,
+                        EndiannessDetectionError,
+                        InvalidShapeError,
+                        InvalidVersionError,
+                        InvalidCapsuleError,
+                        ObjectOwnershipError,
+                        InvalidTypestrError,
+                        MissingDeleterError,
+                        SimpleNamespaceError,
+                        UnRegCudaTypeError>(module);
     }
 }
 
@@ -124,10 +132,6 @@ namespace cai {
                 deleter(ptr);
             }
 
-            std::function<void(void*)> get_deleter() const {
-                return deleter;
-            }
-
         protected:
             // Factory method
             template<typename... Args>
@@ -181,7 +185,7 @@ namespace cai {
                 }
             }
 
-            cuda_array_t() {};
+            cuda_array_t() = default;
 
             void make_cuda_array_t() {
                 typestr = determine_endianness() + py::format_descriptor<T>::format() + std::to_string(sizeof(T));
@@ -190,7 +194,6 @@ namespace cai {
                 handle = cuda_memory_handle<T>::make_shared_handle(deviceptr);
             };
 
-            friend class CudaArrayInterfaceTest;
             friend struct py::detail::type_caster<cuda_array_t<T>>;
 
         public:
@@ -247,6 +250,7 @@ namespace cai {
                 return new cuda_shared_ptr_holder(sharedPtr);
             }
 
+            friend class CudaArrayInterfaceTest;
             friend struct py::detail::type_caster<cuda_array_t<T>>;
     };
 
@@ -280,8 +284,11 @@ namespace cai {
     }
 
     void validate_shape(const std::vector<size_t>& shape_vec) {
+        if (!shape_vec.size()) {
+            throw caiexcp::InvalidShapeError("'shape' cannot be empty");
+        }
         for (const auto& h : shape_vec) {
-            if (h <= 0) {
+            if (h < 1) {
                 throw caiexcp::InvalidShapeError("All elements in 'shape' should be non-negative integers in the provided __cuda_array_interface__");
             }
         }
@@ -290,15 +297,15 @@ namespace cai {
     void validate_cuda_ptr(void* ptr) {
         cudaPointerAttributes attributes;
         checkCudaErrors(cudaPointerGetAttributes(&attributes, ptr));
+        if (attributes.type == cudaMemoryTypeUnregistered) {
+            throw caiexcp::UnRegCudaTypeError("Invalid cuda device pointer in cuda_array_t object");
+        }
     }
 
     template <typename T>
     void validate_cuda_memory_handle(const std::shared_ptr<cuda_memory_handle<T>>& sptr) {
         if (sptr.use_count() != 1) {
             throw caiexcp::ObjectOwnershipError("cuda_memory_handle has invalid reference count!");
-        }
-        if (!static_cast<bool>(sptr->get_deleter())) {
-            throw caiexcp::MissingDeleterError("The cuda_memory_handle does not have a valid callable deleter!");
         }
     }
 
@@ -308,9 +315,6 @@ namespace cai {
         }
         if (std::string(vcaps.name()) != "cuda_memory_capsule") {
             throw caiexcp::InvalidCapsuleError("Capsule has an unexpected name.");
-        }
-        if (!vcaps.get_pointer()) {
-            throw caiexcp::InvalidCapsuleError("Capsule does not contain a valid pointer.");
         }
     }
 
