@@ -19,11 +19,11 @@ def get_cuda_version() -> str:
     return "".join(version)
 
 
-def install_cupy() -> None:
+def install_cupy_matching_cuda_version() -> None:
     cuda_version = get_cuda_version()
     cupy_package = "".join(("cupy-cuda", cuda_version))
     subprocess.run([sys.executable, "-m", "pip", "install", cupy_package], shell=False, check=True)
 
 
 if __name__ == "__main__":
-    install_cupy()
+    install_cupy_matching_cuda_version()
