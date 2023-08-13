@@ -32,6 +32,7 @@ namespace caiexcp {
     class CLASS_NAME : public BaseError {     \
         public:                               \
             using BaseError::BaseError;       \
+            static constexpr const char* class_name = #CLASS_NAME; \
     };
 
 namespace caiexcp {
@@ -57,7 +58,7 @@ namespace caiexcp {
 
     template <typename... Args>
     void register_errors(py::module &module) {
-        (py::register_exception<Args>(module, typeid(Args).name()), ...);
+        (py::register_exception<Args>(module, Args::class_name), ...);
     }
 
     inline void register_custom_cuda_array_interface_exceptions(py::module &module) {
@@ -342,7 +343,7 @@ public:
         py::object obj = py::reinterpret_borrow<py::object>(src);
 
         if (!py::hasattr(obj, "__cuda_array_interface__")) {
-            throw caiexcp::InterfaceNotImplementedError("Provided Python Object does not have a __cuda_array_interface__");
+            throw caiexcp::InterfaceNotImplementedError("Provided Python Object does not implement __cuda_array_interface__");
         }
 
         py::object interface = obj.attr("__cuda_array_interface__");
@@ -366,7 +367,11 @@ public:
         py::tuple shape_tuple = iface_dict["shape"].cast<py::tuple>();
         //Extract the shape key from the cuda array dict
         for (py::handle h : shape_tuple) {
-            value.shape.emplace_back(h.cast<size_t>());
+            if (py::isinstance<py::int_>(h) && h.cast<ssize_t>() >= 0) {
+                value.shape.emplace_back(h.cast<size_t>());
+            } else {
+                throw caiexcp::InvalidShapeError("'shape' can only contain non-negative integers");
+            }
         }
         cai::validate_shape(value.shape);
 
@@ -376,13 +381,20 @@ public:
 
         //Extract the data key from the cuda array dict
         py::tuple data = iface_dict["data"].cast<py::tuple>();
-        void* inputptr = reinterpret_cast<void*>(data[0].cast<uintptr_t>());
+        py::object ptr_obj = data[0].cast<py::object>();
+
+        void* inputptr{nullptr};
+        if (!ptr_obj.is_none()) {
+            inputptr = reinterpret_cast<void*>(ptr_obj.cast<uintptr_t>());
+        }
         cai::validate_cuda_ptr(inputptr);
 
         value.handle = cai::cuda_memory_handle<T>::make_shared_handle(inputptr, [](void*){});
         cai::validate_cuda_memory_handle<T>(value.handle);
 
         value.readonly = data[1].cast<bool>();
+
+        value.check_dtype();
 
         // Keep a reference to the original Python object to prevent it from being garbage collected
         value.py_obj = obj;
@@ -395,6 +407,7 @@ public:
 
         cai::validate_shape(src.shape);
         cai::validate_typestr(src.typestr);
+        src.check_dtype();
         cai::validate_cuda_ptr(src.ptr());
         cai::validate_cuda_memory_handle<T>(src.handle);
 

@@ -266,7 +266,7 @@ TEST(CudaArraySimulatedIntegrationTest, SendAndReceive) {
 
     auto m = create_module("test");
 
-    m.def("sendandreceive", &cai::send_and_receive_cuda_array_interface<float>);
+    m.def("sendandreceive", &cai::send_and_receive_cuda_array_interface<int>);
 
     py::module cp = py::module::import("cupy");
     py::module np = py::module::import("numpy");

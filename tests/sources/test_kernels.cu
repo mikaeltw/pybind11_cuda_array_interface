@@ -13,5 +13,5 @@ void saxpy_kernel(float *s, float *x, float *y, int a, int n) {
 }
 
 void call_saxpy(float *s, float *x, float *y, int a, int n) {
-    saxpy_kernel<<<1, 1>>>(s, x, y, a, n);
+    saxpy_kernel<<<256, 32>>>(s, x, y, a, n);
 }
