@@ -107,10 +107,10 @@ namespace cai {
 
     //Forward declarations
     template<typename T>
-    struct cuda_array_t;
+    class cuda_array_t;
 
     template<typename T>
-    struct cuda_memory_handle {
+    class cuda_memory_handle {
         private:
             void* ptr;
             std::function<void(void*)> deleter;
@@ -124,9 +124,9 @@ namespace cai {
                 : ptr(ptr), deleter(deleter) {}
 
 
-            friend struct cuda_array_t<T>;
+            friend class cuda_array_t<T>;
             friend class CudaArrayInterfaceTest;
-            friend struct py::detail::type_caster<cuda_array_t<T>>;
+            friend class py::detail::type_caster<cuda_array_t<T>>;
 
         public:
             ~cuda_memory_handle() {
@@ -142,7 +142,7 @@ namespace cai {
     };
 
     template <typename T>
-    struct cuda_array_t {
+    class cuda_array_t {
         private:
             std::shared_ptr<cuda_memory_handle<T>> handle;
             std::vector<size_t> shape;
@@ -195,7 +195,7 @@ namespace cai {
                 handle = cuda_memory_handle<T>::make_shared_handle(deviceptr);
             };
 
-            friend struct py::detail::type_caster<cuda_array_t<T>>;
+            friend class py::detail::type_caster<cuda_array_t<T>>;
 
         public:
             cuda_array_t(const std::vector<size_t>& shape,
@@ -205,23 +205,23 @@ namespace cai {
                                                 version(version) {this->make_cuda_array_t();
                                                 };
 
-            const std::vector<size_t>& get_shape() {
+            const std::vector<size_t>& get_shape() const {
                 return shape;
             }
 
-            const py::dtype get_dtype() {
+            const py::dtype get_dtype() const {
                 return py::dtype(typestr);
             }
 
-            bool is_readonly() {
+            const bool is_readonly() const {
                 return readonly;
             }
 
-            int get_version() {
+            const int get_version() const {
                 return version;
             }
 
-            size_t size_of_shape() {
+            const size_t size_of_shape() const {
                 return std::accumulate(shape.begin(), shape.end(), static_cast<std::size_t>(1), std::multiplies<>());
             }
 
@@ -240,7 +240,7 @@ namespace cai {
     };
 
     template <typename T>
-    struct cuda_shared_ptr_holder {
+    class cuda_shared_ptr_holder {
         private:
             std::shared_ptr<cuda_memory_handle<T>> holder_ptr;
 
@@ -252,7 +252,7 @@ namespace cai {
             }
 
             friend class CudaArrayInterfaceTest;
-            friend struct py::detail::type_caster<cuda_array_t<T>>;
+            friend class py::detail::type_caster<cuda_array_t<T>>;
     };
 
     void validate_typestr(const std::string& typestr) {
@@ -324,15 +324,17 @@ namespace cai {
 namespace pybind11 {
     namespace detail {
         template <typename T>
-        struct handle_type_name<cai::cuda_array_t<T>> {
-            static constexpr auto name
-                = const_name("cai::cuda_array_t[") + npy_format_descriptor<T>::name + const_name("]");
+        class handle_type_name<cai::cuda_array_t<T>> {
+            public:
+                static constexpr auto name = const_name("cai::cuda_array_t[")
+                                             + npy_format_descriptor<T>::name
+                                             + const_name("]");
         };
     }
 }
 
 template <typename T>
-struct py::detail::type_caster<cai::cuda_array_t<T>> {
+class py::detail::type_caster<cai::cuda_array_t<T>> {
 public:
     using type = cai::cuda_array_t<T>;
     PYBIND11_TYPE_CASTER(cai::cuda_array_t<T>, py::detail::handle_type_name<type>::name);
