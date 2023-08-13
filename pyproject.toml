@@ -62,7 +62,7 @@ write_to = "pybind11_cuda_array_interface/version.py"
 [tool.pytest.ini_options]
 testpaths = [
     "tests/pytest",
-    "tests/install_cupy.py",
+    "tests/test_install_cupy.py",
 ]
 python_files = [
     "*.py",
