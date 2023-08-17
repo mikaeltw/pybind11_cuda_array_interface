@@ -232,7 +232,8 @@ TEST(ValidateCudaPtr, InvalidCudaPointer)
 {
     int localVariable;
 
-    EXPECT_THROW(cai::validate_cuda_ptr(reinterpret_cast<void *>(&localVariable)), caiexcp::UnRegCudaTypeError);
+    EXPECT_THROW(cai::validate_cuda_ptr(reinterpret_cast<void *>(&localVariable)),
+                 caiexcp::UnRegCudaTypeError);
     EXPECT_THROW(cai::validate_cuda_ptr(nullptr), caiexcp::UnRegCudaTypeError);
 }
 
@@ -266,7 +267,7 @@ TEST_F(CudaArrayInterfaceTest, ValidateCudaMemoryHandleInvalidRefCount)
     cudaMalloc(reinterpret_cast<void **>(&devPtr), sizeof(int));
 
     auto handle1 = create_shared_cuda_memory_handle<int>(devPtr);
-    auto ___ = handle1; // Increases the reference count
+    auto ___ = handle1;     // Increases the reference count
     static_cast<void>(___); // Variable unused
 
     EXPECT_THROW(cai::validate_cuda_memory_handle(handle1), caiexcp::ObjectOwnershipError);
@@ -313,8 +314,7 @@ TEST(CudaArraySimulatedIntegrationTest, SendAndReceive)
     // Check if the returned object has __cuda_array_interface__
     ASSERT_TRUE(py::hasattr(received_cupy_array, "__cuda_array_interface__"));
 
-    auto received_numpy_array
-        = cupy.attr("asnumpy")(received_cupy_array).cast<py::array_t<int>>();
+    auto received_numpy_array = cupy.attr("asnumpy")(received_cupy_array).cast<py::array_t<int>>();
     auto sent_numpy_array = cupy.attr("asnumpy")(cupy_array).cast<py::array_t<int>>();
 
     ASSERT_TRUE(numpy.attr("array_equal")(received_numpy_array, sent_numpy_array).cast<bool>());

@@ -113,7 +113,8 @@ private:
     }
 
     // Constructor for Python-created objects (explicit do-nothing deleter)
-    cuda_memory_handle(void *ptr, std::function<void(void *)> deleter) : ptr(ptr), deleter(std::move(deleter))
+    cuda_memory_handle(void *ptr, std::function<void(void *)> deleter)
+        : ptr(ptr), deleter(std::move(deleter))
     {
     }
 
@@ -158,7 +159,8 @@ private:
                      << "Expected the dtype: " << py::str(expected_dtype).cast<std::string>()
                      << " corresponding"
                      << " to a C++ " << typeid(T).name() << " which is not compatible "
-                     << "with the supplied dtype " << py::str(actual_dype).cast<std::string>() << "\n";
+                     << "with the supplied dtype " << py::str(actual_dype).cast<std::string>()
+                     << "\n";
             throw caiexcp::DtypeMismatchError(error_ss.str());
         }
     }
@@ -197,8 +199,7 @@ private:
     friend class py::detail::type_caster<cuda_array_t<T>>;
 
 public:
-    cuda_array_t(std::vector<size_t> shape, const bool readonly = false,
-                 const int version = 3)
+    cuda_array_t(std::vector<size_t> shape, const bool readonly = false, const int version = 3)
         : shape(std::move(shape)), readonly(readonly), version(version)
     {
         this->make_cuda_array_t();
@@ -329,13 +330,13 @@ inline void validate_capsule(const py::capsule &vcaps)
 } // namespace cai
 
 namespace pybind11::detail {
-    template <typename T>
-    class handle_type_name<cai::cuda_array_t<T>>
-    {
-    public:
-        static constexpr auto name
-            = const_name("cai::cuda_array_t[") + npy_format_descriptor<T>::name + const_name("]");
-    };
+template <typename T>
+class handle_type_name<cai::cuda_array_t<T>>
+{
+public:
+    static constexpr auto name
+        = const_name("cai::cuda_array_t[") + npy_format_descriptor<T>::name + const_name("]");
+};
 } // namespace pybind11::detail
 
 template <typename T>
@@ -444,9 +445,10 @@ public:
 
         // Assuming src was created in C++, src.handle owns the CUDA memory and should
         // be wrapped in a py::capsule to transfer ownership to Python.
-        py::capsule caps(
-            cai::cuda_shared_ptr_holder<T>::create(src.handle), "cuda_memory_capsule",
-            [](void *cap_ptr) { delete reinterpret_cast<cai::cuda_shared_ptr_holder<T> *>(cap_ptr); });
+        py::capsule caps(cai::cuda_shared_ptr_holder<T>::create(src.handle), "cuda_memory_capsule",
+                         [](void *cap_ptr) {
+                             delete reinterpret_cast<cai::cuda_shared_ptr_holder<T> *>(cap_ptr);
+                         });
         cai::validate_capsule(caps);
 
         // Create an instance of a Python object that can hold arbitrary attributes

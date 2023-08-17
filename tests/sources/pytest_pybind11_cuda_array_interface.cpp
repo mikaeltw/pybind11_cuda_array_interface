@@ -13,7 +13,8 @@
 #include <iostream>
 
 template <typename T>
-void saxpy(cai::cuda_array_t<T> s_cai, cai::cuda_array_t<T> x_cai, cai::cuda_array_t<T> y_cai, int a_scalar)
+void saxpy(cai::cuda_array_t<T> s_cai, cai::cuda_array_t<T> x_cai, cai::cuda_array_t<T> y_cai,
+           int a_scalar)
 {
     auto s_ptr = s_cai.get_compatible_typed_pointer();
     auto x_ptr = x_cai.get_compatible_typed_pointer();
