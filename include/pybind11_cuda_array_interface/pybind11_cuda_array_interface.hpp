@@ -113,7 +113,7 @@ private:
     }
 
     // Constructor for Python-created objects (explicit do-nothing deleter)
-    cuda_memory_handle(void *ptr, std::function<void(void *)> deleter) : ptr(ptr), deleter(deleter)
+    cuda_memory_handle(void *ptr, std::function<void(void *)> deleter) : ptr(ptr), deleter(std::move(deleter))
     {
     }
 
@@ -150,15 +150,15 @@ private:
     void check_dtype() const
     {
         py::dtype expected_dtype = py::dtype::of<T>();
-        py::dtype dt(this->typestr);
+        py::dtype actual_dype(this->typestr);
 
-        if (!expected_dtype.is(dt)) {
+        if (!expected_dtype.is(actual_dype)) {
             std::stringstream error_ss;
             error_ss << "Mismatching dtypes. "
                      << "Expected the dtype: " << py::str(expected_dtype).cast<std::string>()
                      << " corresponding"
                      << " to a C++ " << typeid(T).name() << " which is not compatible "
-                     << "with the supplied dtype " << py::str(dt).cast<std::string>() << "\n";
+                     << "with the supplied dtype " << py::str(actual_dype).cast<std::string>() << "\n";
             throw caiexcp::DtypeMismatchError(error_ss.str());
         }
     }
@@ -171,14 +171,16 @@ private:
         auto firstByte = *bytePtr;
         auto lastByte = *(bytePtr + sizeof(uint32_t) - 1);
 
+        std::string endiann_str;
         if (firstByte == 1 && lastByte == 0) {
-            return "<"; // little-endian
+            endiann_str = "<"; // little-endian
         } else if (firstByte == 0 && lastByte == 1) {
-            return ">"; // big-endian
+            endiann_str = ">"; // big-endian
         } else {
-            // return "|"; // not-relevant
+            // endiann_str = "|"; // not-relevant
             caiexcp::EndiannessDetectionError("Unable to determine system endianness");
         }
+        return endiann_str;
     }
 
     cuda_array_t() = default;
@@ -195,22 +197,22 @@ private:
     friend class py::detail::type_caster<cuda_array_t<T>>;
 
 public:
-    cuda_array_t(const std::vector<size_t> &shape, const bool readonly = false,
+    cuda_array_t(std::vector<size_t> shape, const bool readonly = false,
                  const int version = 3)
-        : shape(shape), readonly(readonly), version(version)
+        : shape(std::move(shape)), readonly(readonly), version(version)
     {
         this->make_cuda_array_t();
     };
 
     const std::vector<size_t> &get_shape() const { return shape; }
 
-    const py::dtype get_dtype() const { return py::dtype(typestr); }
+    py::dtype get_dtype() const { return py::dtype{typestr}; }
 
-    const bool is_readonly() const { return readonly; }
+    bool is_readonly() const { return readonly; }
 
-    const int get_version() const { return version; }
+    int get_version() const { return version; }
 
-    const size_t size_of_shape() const
+    size_t size_of_shape() const
     {
         return std::accumulate(shape.begin(), shape.end(), static_cast<std::size_t>(1),
                                std::multiplies<>());
@@ -239,8 +241,8 @@ class cuda_shared_ptr_holder
 private:
     std::shared_ptr<cuda_memory_handle<T>> holder_ptr;
 
-    cuda_shared_ptr_holder(const std::shared_ptr<cuda_memory_handle<T>> &sharedPtr)
-        : holder_ptr(sharedPtr)
+    cuda_shared_ptr_holder(std::shared_ptr<cuda_memory_handle<T>> sharedPtr)
+        : holder_ptr(std::move(sharedPtr))
     {
     }
 
@@ -254,7 +256,7 @@ private:
     friend class py::detail::type_caster<cuda_array_t<T>>;
 };
 
-void validate_typestr(const std::string &typestr)
+inline void validate_typestr(const std::string &typestr)
 {
     if (typestr.length() < 3) {
         throw caiexcp::InvalidTypestrError("Invalid typestr: too short.");
@@ -284,20 +286,20 @@ void validate_typestr(const std::string &typestr)
     }
 }
 
-void validate_shape(const std::vector<size_t> &shape_vec)
+inline void validate_shape(const std::vector<size_t> &shape_vec)
 {
-    if (!shape_vec.size()) {
+    if (shape_vec.empty()) {
         throw caiexcp::InvalidShapeError("'shape' cannot be empty");
     }
-    for (const auto &h : shape_vec) {
-        if (h < 1) {
+    for (const auto &s_elem : shape_vec) {
+        if (s_elem < 1) {
             throw caiexcp::InvalidShapeError("All elements in 'shape' should be non-negative "
                                              "integers in the provided __cuda_array_interface__");
         }
     }
 }
 
-void validate_cuda_ptr(void *ptr)
+inline void validate_cuda_ptr(void *ptr)
 {
     cudaPointerAttributes attributes;
     checkCudaErrors(cudaPointerGetAttributes(&attributes, ptr));
@@ -314,7 +316,7 @@ void validate_cuda_memory_handle(const std::shared_ptr<cuda_memory_handle<T>> &s
     }
 }
 
-void validate_capsule(const py::capsule &vcaps)
+inline void validate_capsule(const py::capsule &vcaps)
 {
     if (!vcaps) {
         throw caiexcp::InvalidCapsuleError("Capsule creation failed.");
@@ -326,17 +328,15 @@ void validate_capsule(const py::capsule &vcaps)
 
 } // namespace cai
 
-namespace pybind11 {
-namespace detail {
-template <typename T>
-class handle_type_name<cai::cuda_array_t<T>>
-{
-public:
-    static constexpr auto name
-        = const_name("cai::cuda_array_t[") + npy_format_descriptor<T>::name + const_name("]");
-};
-} // namespace detail
-} // namespace pybind11
+namespace pybind11::detail {
+    template <typename T>
+    class handle_type_name<cai::cuda_array_t<T>>
+    {
+    public:
+        static constexpr auto name
+            = const_name("cai::cuda_array_t[") + npy_format_descriptor<T>::name + const_name("]");
+    };
+} // namespace pybind11::detail
 
 template <typename T>
 class py::detail::type_caster<cai::cuda_array_t<T>>
@@ -346,10 +346,11 @@ public:
     PYBIND11_TYPE_CASTER(cai::cuda_array_t<T>, py::detail::handle_type_name<type>::name);
 
     // Python -> C++ conversion
-    bool load(py::handle src, bool)
+    bool load(py::handle src, bool ___)
     {
+        static_cast<void>(___); // Unused is intentional
 
-        py::object obj = py::reinterpret_borrow<py::object>(src);
+        auto obj = py::reinterpret_borrow<py::object>(src);
 
         if (!py::hasattr(obj, "__cuda_array_interface__")) {
             throw caiexcp::InterfaceNotImplementedError(
@@ -357,7 +358,7 @@ public:
         }
 
         py::object interface = obj.attr("__cuda_array_interface__");
-        py::dict iface_dict = interface.cast<py::dict>();
+        auto iface_dict = interface.cast<py::dict>();
 
         std::vector<std::string> mandatory_fields = {"data", "shape", "typestr", "version"};
 
@@ -377,11 +378,11 @@ public:
         }
 
         // Extract the shape and check if all elements are unsigned integers
-        py::tuple shape_tuple = iface_dict["shape"].cast<py::tuple>();
+        auto shape_tuple = iface_dict["shape"].cast<py::tuple>();
         // Extract the shape key from the cuda array dict
-        for (py::handle h : shape_tuple) {
-            if (py::isinstance<py::int_>(h) && h.cast<ssize_t>() >= 0) {
-                value.shape.emplace_back(h.cast<size_t>());
+        for (py::handle s_elem : shape_tuple) {
+            if (py::isinstance<py::int_>(s_elem) && s_elem.cast<ssize_t>() >= 0) {
+                value.shape.emplace_back(s_elem.cast<size_t>());
             } else {
                 throw caiexcp::InvalidShapeError("'shape' can only contain non-negative integers");
             }
@@ -393,8 +394,8 @@ public:
         cai::validate_typestr(value.typestr);
 
         // Extract the data key from the cuda array dict
-        py::tuple data = iface_dict["data"].cast<py::tuple>();
-        py::object ptr_obj = data[0].cast<py::object>();
+        auto data = iface_dict["data"].cast<py::tuple>();
+        auto ptr_obj = data[0].cast<py::object>();
 
         void *inputptr{nullptr};
         if (!ptr_obj.is_none()) {
@@ -438,14 +439,14 @@ public:
         interface["shape"] = py::tuple(py::cast(src.shape));
         interface["typestr"] = py::str(py::cast(src.typestr));
         interface["data"]
-            = py::make_tuple(py::int_(reinterpret_cast<uintptr_t>(src.ptr())), src.readonly);
+            = py::make_tuple(py::int_{reinterpret_cast<uintptr_t>(src.ptr())}, src.readonly);
         interface["version"] = 3;
 
         // Assuming src was created in C++, src.handle owns the CUDA memory and should
         // be wrapped in a py::capsule to transfer ownership to Python.
         py::capsule caps(
             cai::cuda_shared_ptr_holder<T>::create(src.handle), "cuda_memory_capsule",
-            [](void *p) { delete reinterpret_cast<cai::cuda_shared_ptr_holder<T> *>(p); });
+            [](void *cap_ptr) { delete reinterpret_cast<cai::cuda_shared_ptr_holder<T> *>(cap_ptr); });
         cai::validate_capsule(caps);
 
         // Create an instance of a Python object that can hold arbitrary attributes

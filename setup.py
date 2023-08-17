@@ -31,7 +31,7 @@ def get_env_variable_bool_state(var_name: str) -> str:
 def minimum_requirements_of_non_python_dependencies() -> List[str]:
     return [
         "cuda>=10.1",
-        "cxx==14",
+        "cxx==17",
     ]
 
 

@@ -39,9 +39,9 @@ inline py::module create_module(const std::string &module_name)
 namespace cai {
 
 template <typename T>
-inline const cuda_array_t<T> &send_and_receive_cuda_array_interface(const cuda_array_t<T> &ca)
+inline const cuda_array_t<T> &send_and_receive_cuda_array_interface(const cuda_array_t<T> &cai_obj)
 {
-    return ca;
+    return cai_obj;
 }
 
 class CudaArrayInterfaceTest : public ::testing::Test
@@ -221,9 +221,9 @@ TEST(ValidateShape, ValidShape)
 TEST(ValidateCudaPtr, ValidCudaPointer)
 {
     int *devPtr;
-    cudaMalloc((void **)&devPtr, sizeof(int));
+    cudaMalloc(reinterpret_cast<void **>(&devPtr), sizeof(int));
 
-    EXPECT_NO_THROW(cai::validate_cuda_ptr((void *)devPtr));
+    EXPECT_NO_THROW(cai::validate_cuda_ptr(reinterpret_cast<void *>(devPtr)));
 
     cudaFree(devPtr);
 }
@@ -232,7 +232,7 @@ TEST(ValidateCudaPtr, InvalidCudaPointer)
 {
     int localVariable;
 
-    EXPECT_THROW(cai::validate_cuda_ptr((void *)&localVariable), caiexcp::UnRegCudaTypeError);
+    EXPECT_THROW(cai::validate_cuda_ptr(reinterpret_cast<void *>(&localVariable)), caiexcp::UnRegCudaTypeError);
     EXPECT_THROW(cai::validate_cuda_ptr(nullptr), caiexcp::UnRegCudaTypeError);
 }
 
@@ -263,10 +263,11 @@ TEST_F(CudaArrayInterfaceTest, ValidateCudaMemoryHandleInvalidRefCount)
 {
     // Allocate CUDA memory
     int *devPtr;
-    cudaMalloc((void **)&devPtr, sizeof(int));
+    cudaMalloc(reinterpret_cast<void **>(&devPtr), sizeof(int));
 
     auto handle1 = create_shared_cuda_memory_handle<int>(devPtr);
-    auto handle2 = handle1; // Increases the reference count
+    auto ___ = handle1; // Increases the reference count
+    static_cast<void>(___); // Variable unused
 
     EXPECT_THROW(cai::validate_cuda_memory_handle(handle1), caiexcp::ObjectOwnershipError);
 }
@@ -274,7 +275,7 @@ TEST_F(CudaArrayInterfaceTest, ValidateCudaMemoryHandleInvalidRefCount)
 TEST_F(CudaArrayInterfaceTest, ValidateCudaMemoryHandleValidHandle)
 {
     int *devPtr;
-    cudaMalloc((void **)&devPtr, sizeof(int));
+    cudaMalloc(reinterpret_cast<void **>(&devPtr), sizeof(int));
 
     auto handle = create_shared_cuda_memory_handle<int>(devPtr);
 
@@ -284,10 +285,10 @@ TEST_F(CudaArrayInterfaceTest, ValidateCudaMemoryHandleValidHandle)
 TEST_F(CudaArrayInterfaceTest, CudaSharedPtrHolderCorrectInstantiation)
 {
     int *devPtr;
-    cudaMalloc((void **)&devPtr, sizeof(int));
+    cudaMalloc(reinterpret_cast<void **>(&devPtr), sizeof(int));
 
     auto handle = create_shared_cuda_memory_handle<int>(devPtr);
-    auto holder = create_cuda_shared_ptr_holder<int>(handle);
+    auto *holder = create_cuda_shared_ptr_holder<int>(handle);
 
     EXPECT_NE(holder, nullptr);
 
@@ -297,24 +298,24 @@ TEST_F(CudaArrayInterfaceTest, CudaSharedPtrHolderCorrectInstantiation)
 TEST(CudaArraySimulatedIntegrationTest, SendAndReceive)
 {
 
-    auto m = create_module("test");
+    auto test_module = create_module("test");
 
-    m.def("sendandreceive", &cai::send_and_receive_cuda_array_interface<int>);
+    test_module.def("sendandreceive", &cai::send_and_receive_cuda_array_interface<int>);
 
-    py::module cp = py::module::import("cupy");
-    py::module np = py::module::import("numpy");
+    py::module cupy = py::module::import("cupy");
+    py::module numpy = py::module::import("numpy");
 
     py::list lst = py::cast(std::vector<int>({1, 2, 3, 4, 5}));
-    py::object cupy_array = cp.attr("array")(lst).attr("astype")("int32");
+    py::object cupy_array = cupy.attr("array")(lst).attr("astype")("int32");
 
-    py::object received_cupy_array = m.attr("sendandreceive")(cupy_array);
+    py::object received_cupy_array = test_module.attr("sendandreceive")(cupy_array);
 
     // Check if the returned object has __cuda_array_interface__
     ASSERT_TRUE(py::hasattr(received_cupy_array, "__cuda_array_interface__"));
 
-    py::array_t<int> received_numpy_array
-        = cp.attr("asnumpy")(received_cupy_array).cast<py::array_t<int>>();
-    py::array_t<int> sent_numpy_array = cp.attr("asnumpy")(cupy_array).cast<py::array_t<int>>();
+    auto received_numpy_array
+        = cupy.attr("asnumpy")(received_cupy_array).cast<py::array_t<int>>();
+    auto sent_numpy_array = cupy.attr("asnumpy")(cupy_array).cast<py::array_t<int>>();
 
-    ASSERT_TRUE(np.attr("array_equal")(received_numpy_array, sent_numpy_array).cast<bool>());
+    ASSERT_TRUE(numpy.attr("array_equal")(received_numpy_array, sent_numpy_array).cast<bool>());
 }

@@ -12,6 +12,7 @@ Checks: '
 -modernize-use-nodiscard,
 -readability-static-accessed-through-instance,
 -readability-magic-numbers,
+-performance-no-int-to-ptr,
 '
 
 # Checks actively ignored due to the reasons described below.
@@ -21,3 +22,4 @@ Checks: '
 # -modernize-use-nodiscard: Marking things from only declarations cannot be correct.
 # -readability-static-accessed-through-instance: threadIdx.x accesses are fine and very much readable.
 # -readability-magic-numbers: Of course they should be reduced, but having to name every single one seems a bit extreme.
+# -performance-no-int-to-ptr: Working with pointers from Python which is basically integers, requires int to pointer casts.

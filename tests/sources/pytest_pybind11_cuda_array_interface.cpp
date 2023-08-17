@@ -13,19 +13,19 @@
 #include <iostream>
 
 template <typename T>
-void saxpy(cai::cuda_array_t<T> s, cai::cuda_array_t<T> x, cai::cuda_array_t<T> y, int a)
+void saxpy(cai::cuda_array_t<T> s_cai, cai::cuda_array_t<T> x_cai, cai::cuda_array_t<T> y_cai, int a_scalar)
 {
-    auto s_ptr = s.get_compatible_typed_pointer();
-    auto x_ptr = x.get_compatible_typed_pointer();
-    auto y_ptr = y.get_compatible_typed_pointer();
+    auto s_ptr = s_cai.get_compatible_typed_pointer();
+    auto x_ptr = x_cai.get_compatible_typed_pointer();
+    auto y_ptr = y_cai.get_compatible_typed_pointer();
 
-    call_saxpy(s_ptr, x_ptr, y_ptr, a, static_cast<int>(s.size_of_shape()));
+    call_saxpy(s_ptr, x_ptr, y_ptr, a_scalar, static_cast<int>(s_cai.size_of_shape()));
 }
 
 template <typename T>
-cai::cuda_array_t<T> receive_and_return_cuda_array_interface(cai::cuda_array_t<T> s)
+cai::cuda_array_t<T> receive_and_return_cuda_array_interface(cai::cuda_array_t<T> s_cai)
 {
-    return s;
+    return s_cai;
 }
 
 template <typename T>
@@ -33,8 +33,8 @@ cai::cuda_array_t<T> return_cuda_array_interface(std::vector<size_t> shape = {3,
                                                  bool readonly = false, int version = 3)
 {
 
-    cai::cuda_array_t<T> s(shape, readonly, version);
-    return s;
+    cai::cuda_array_t<T> s_cai(shape, readonly, version);
+    return s_cai;
 }
 
 template <typename T>
@@ -43,11 +43,11 @@ return_cuda_array_interface_with_memory_copy(std::vector<T> vec = {1.0, 2.0, 3.0
                                              bool readonly = false, int version = 3)
 {
 
-    cai::cuda_array_t<T> s({vec.size()}, readonly, version);
-    checkCudaErrors(cudaMemcpy(s.get_compatible_typed_pointer(), vec.data(),
+    cai::cuda_array_t<T> s_cai({vec.size()}, readonly, version);
+    checkCudaErrors(cudaMemcpy(s_cai.get_compatible_typed_pointer(), vec.data(),
                                vec.size() * sizeof(T), cudaMemcpyHostToDevice));
 
-    return s;
+    return s_cai;
 }
 
 PYBIND11_MODULE(pycai, module)
