@@ -1,0 +1,25 @@
+Checks: '
+*llvm-*,
+*misc-*,
+*modernize-*,
+*performance-*,
+*portability-*,
+*readability-*,
+
+-llvm-header-guard,
+-modernize-avoid-c-arrays,
+-modernize-use-trailing-return-type,
+-modernize-use-nodiscard,
+-readability-static-accessed-through-instance,
+-readability-magic-numbers,
+-performance-no-int-to-ptr,
+'
+
+# Checks actively ignored due to the reasons described below.
+# -llvm-header-guard: pragma once is not llvm standard or even c++ for that matter.
+# -modernize-avoid-c-arrays: std::array is not supported in cuda kernels.
+# -modernize-use-trailing-return-type: Forcefully put auto everywhere seems dull.
+# -modernize-use-nodiscard: Marking things from only declarations cannot be correct.
+# -readability-static-accessed-through-instance: threadIdx.x accesses are fine and very much readable.
+# -readability-magic-numbers: Of course they should be reduced, but having to name every single one seems a bit extreme.
+# -performance-no-int-to-ptr: Working with pointers from Python which is basically integers, requires int to pointer casts.

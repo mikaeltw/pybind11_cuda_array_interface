@@ -14,8 +14,8 @@ on:
 
 
 jobs:
-  linting:
-    name: Run linting tools
+  linting_python:
+    name: Run Python linting tools
     runs-on: ubuntu-latest
 
     steps:
@@ -47,3 +47,70 @@ jobs:
     - name: Run the linting tools
       run: |
         python linting/check_python_linting.py
+
+
+
+  linting_cpp:
+    name: Run cpp/cuda linting tools
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install cuda
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y --no-install-recommends \
+        nvidia-cuda-toolkit
+
+    - name: Install clang tools, toolchains and thirdparty cpp dependencies
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y --no-install-recommends \
+        clang-format-14 clang-tidy-14 clang-14 g++-12 googletest
+
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+
+    - name: Create Python venv
+      run: |
+        python -m venv venv
+
+    - name: Upgrade pip
+      run: |
+        source venv/bin/activate
+        python -m pip install -U pip>=23.2.1
+
+    - name: Install dependencies for linting
+      run: |
+        source venv/bin/activate
+        python -m pip install pybind11[global]>=2.11.1
+
+    - name: Check formatting with clang-format
+      run: |
+        source venv/bin/activate
+        clang-format-14 -Werror --dry-run -style=file \
+        include/pybind11_cuda_array_interface/pybind11_cuda_array_interface.hpp \
+        tests/sources/gtest_pybind11_cuda_array_interface.cpp \
+        tests/sources/pytest_pybind11_cuda_array_interface.cpp \
+        tests/sources/test_kernels.cu tests/sources/test_kernels.hpp
+
+    - name: Check base with clang-tidy
+      run: |
+        source venv/bin/activate
+        clang-tidy-14 --format-style=file \
+        --warnings-as-errors='*' \
+        -header-filter='.*' \
+        tests/sources/gtest_pybind11_cuda_array_interface.cpp \
+        tests/sources/pytest_pybind11_cuda_array_interface.cpp \
+        tests/sources/test_kernels.cu \
+        -- -fno-caret-diagnostics --std=c++17 \
+        -I include/ \
+        -isystem `python3 -c "import pybind11; print(pybind11.get_include())"` \
+        -isystem `python3-config --includes` \
+        -isystem /usr/src/googletest/googletest/include/

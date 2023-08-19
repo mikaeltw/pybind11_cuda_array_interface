@@ -4,7 +4,7 @@ requires = [
     "setuptools_scm",
     "scikit-build>=0.13",
     "cmake>=3.18",
-    "pybind11[global]>=2.9.2",
+    "pybind11[global]>=2.11.1",
     "ninja",
     "toml",
 ]

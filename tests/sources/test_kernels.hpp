@@ -9,7 +9,7 @@
 
 #include <cuda_runtime.h>
 
-__global__
-void saxpy_kernel(float *s, float *x, float *y, int a, int n);
+__global__ void saxpy_kernel(float *s_ptr, const float *x_ptr, const float *y_ptr, int a_scalar,
+                             int length);
 
-void call_saxpy(float *s, float *x, float *y, int a, int n);
+void call_saxpy(float *s_ptr, const float *x_ptr, const float *y_ptr, int a_scalar, int length);

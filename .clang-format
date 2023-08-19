@@ -1,0 +1,24 @@
+Standard: c++17
+ColumnLimit: 99
+SortIncludes: true
+BasedOnStyle: LLVM
+PointerAlignment: Right
+AlignAfterOpenBracket: Align
+BreakBeforeBraces: Custom
+IndentCaseLabels: true
+IndentPPDirectives: AfterHash
+IndentWidth: 4
+AccessModifierOffset: -4
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBinaryOperators: All
+BreakConstructorInitializers: BeforeColon
+BraceWrapping:
+    AfterClass: true
+    AfterControlStatement: false
+    AfterEnum: false
+    AfterFunction: true
+    AfterNamespace: false
+    AfterStruct: true
+    BeforeCatch: false
+    BeforeElse: false
+    IndentBraces: false

@@ -19,12 +19,16 @@ set_if_not_defined(PYBIND11_MVERSION 2.9.2)
 set_if_not_defined(PYTHON_MVERSION 3.8)
 set_if_not_defined(CUDA_MVERSION 10.1)
 set_if_not_defined(PACKAGE_MVERSION 0.0.0-dev)
-set_if_not_defined(CXX_MVERSION 14)
+set_if_not_defined(CXX_MVERSION 17)
 
 ##########################
 ### Define the project ###
 ##########################
 cmake_minimum_required(VERSION ${CMAKE_MVERSION} FATAL_ERROR)
+
+# Set the variable to generate compile_commands.json for clang-tidy
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 project(pybind11_cuda_array_interface LANGUAGES CUDA CXX)
 
 set(PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
