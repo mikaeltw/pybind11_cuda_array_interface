@@ -63,6 +63,7 @@ class Linter:
             print("\nLinting succeeded 🎉\n")
         else:
             print("\nLinting failed 🔗‍💥\n")
+            sys.exit(1)
 
 
 if __name__ == "__main__":
