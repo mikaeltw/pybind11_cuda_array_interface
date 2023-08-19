@@ -62,8 +62,8 @@ jobs:
         nvidia-cuda-toolkit
 
     - name: Install clang tools, toolchains and thirdparty cpp dependencies
-      run: >
-        sudo apt-get update -y && \
+      run: |
+        sudo apt-get update -y
         sudo apt-get install -y --no-install-recommends \
         clang-format-14 clang-tidy-14 clang-14 g++-12 googletest
 
@@ -92,8 +92,8 @@ jobs:
         python -m pip install pybind11[global]>=2.11.1
 
     - name: Check formatting with clang-format
-      run: >
-        source venv/bin/activate && \
+      run: |
+        source venv/bin/activate
         clang-format-14 -Werror --dry-run -style=file \
         include/pybind11_cuda_array_interface/pybind11_cuda_array_interface.hpp \
         tests/sources/gtest_pybind11_cuda_array_interface.cpp \
@@ -101,8 +101,8 @@ jobs:
         tests/sources/test_kernels.cu tests/sources/test_kernels.hpp
 
     - name: Check base with clang-tidy
-      run: >
-        source venv/bin/activate && \
+      run: |
+        source venv/bin/activate
         clang-tidy-14 --format-style=file \
         --warnings-as-errors='*' \
         -header-filter='.*' \
