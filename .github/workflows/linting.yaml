@@ -80,7 +80,7 @@ jobs:
         python -m pip install pybind11[global]>=2.11.1
 
     - name: Install cuda
-      run: |
+      run: >
       sudo apt-get update -y && \
       sudo apt-get install cuda-nvcc-11-4
 
