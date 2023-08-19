@@ -55,10 +55,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
     - name: Install cuda
-      run: >
-        sudo apt-get update -y && \
+      run: |
+        sudo apt-get update -y
         sudo apt-get install -y --no-install-recommends \
         nvidia-cuda-toolkit
 
