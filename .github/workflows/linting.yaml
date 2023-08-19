@@ -55,6 +55,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Cache CUDA toolkit packages
+      id: cache-cuda
+      uses: actions/cache@v2
+      with:
+        path: /var/cache/apt/archives
+        key: cuda-${{ runner.os }}-${{ hashFiles('.github/workflows/linting.yaml') }}
+        restore-keys: |
+          cuda-${{ runner.os }}-
+
     - name: Install cuda
       run: |
         sudo apt-get update -y
