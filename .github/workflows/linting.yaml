@@ -55,6 +55,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Change permissions for caching
+      run: sudo chown -R $(whoami):$(whoami) /var/cache/apt/archives
+
     - name: Cache CUDA toolkit packages
       id: cache-cuda
       uses: actions/cache@v2
