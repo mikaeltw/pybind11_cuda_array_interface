@@ -60,7 +60,7 @@ jobs:
       run: >
         sudo apt-get update -y && \
         sudo apt-get install --no-install-recommends \
-        cuda-nvcc-11-4
+        nvidia-cuda-toolkit
 
     - name: Install clang tools, toolchains and thirdparty cpp dependencies
       run: >
