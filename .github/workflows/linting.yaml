@@ -58,14 +58,14 @@ jobs:
 
     - name: Install cuda
       run: >
-        sudo apt-get update -y && \
-        sudo apt-get install --no-install-recommends \
+        apt-get update -y && \
+        apt-get install --no-install-recommends \
         nvidia-cuda-toolkit
 
     - name: Install clang tools, toolchains and thirdparty cpp dependencies
       run: >
-        sudo apt-get update -y && \
-        sudo apt-get install -y --no-install-recommends \
+        apt-get update -y && \
+        apt-get install -y --no-install-recommends \
         clang-format-14 clang-tidy-14 clang-14 g++-12 googletest
 
     - name: Checkout repository
