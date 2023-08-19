@@ -127,3 +127,6 @@ jobs:
         -isystem `python3 -c "import pybind11; print(pybind11.get_include())"` \
         -isystem `python3-config --includes` \
         -isystem /usr/src/googletest/googletest/include/
+
+    - name: Change permissions before cache cleanup
+      run: sudo chown -R $(whoami):$(whoami) /var/cache/apt/archives
