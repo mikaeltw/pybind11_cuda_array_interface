@@ -55,6 +55,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+    - name: Install cuda
+      run: >
+        sudo apt-get update -y && \
+        sudo apt-get install --no-install-recommends \
+        cuda-nvcc-11-4
+
+    - name: Install clang tools, toolchains and thirdparty cpp dependencies
+      run: >
+        sudo apt-get update -y && \
+        sudo apt-get install -y --no-install-recommends \
+        clang-format-14 clang-tidy-14 clang-14 g++-12 googletest
+
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
@@ -78,17 +91,6 @@ jobs:
       run: |
         source venv/bin/activate
         python -m pip install pybind11[global]>=2.11.1
-
-    - name: Install cuda
-      run: >
-        sudo apt-get update -y && \
-        sudo apt-get install cuda-nvcc-11-4
-
-    - name: Install clang tools, toolchains and thirdparty cpp dependencies
-      run: >
-        sudo apt-get update -y && \
-        sudo apt-get install -y --no-install-recommends \
-        clang-format-14 clang-tidy-14 clang-14 g++-12 googletest
 
     - name: Check formatting with clang-format
       run: >
