@@ -81,8 +81,8 @@ jobs:
 
     - name: Install cuda
       run: >
-      sudo apt-get update -y && \
-      sudo apt-get install cuda-nvcc-11-4
+        sudo apt-get update -y && \
+        sudo apt-get install cuda-nvcc-11-4
 
     - name: Install clang tools, toolchains and thirdparty cpp dependencies
       run: >
