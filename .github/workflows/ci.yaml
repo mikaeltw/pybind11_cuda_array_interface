@@ -134,6 +134,7 @@ jobs:
 
   test_upload_pypi:
     name: Upload pycai to Test-PyPI
+    if: github.ref != 'refs/heads/main'
     needs: [build_and_test, packaging]
     runs-on: ubuntu-latest
 
@@ -160,6 +161,7 @@ jobs:
 
   test_pypi_package:
     name: Test pycai from TestPyPI
+    if: github.ref != 'refs/heads/main'
     needs: [test_upload_pypi]
     runs-on: self-hosted
     strategy:
