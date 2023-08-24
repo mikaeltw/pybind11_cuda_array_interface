@@ -2,8 +2,9 @@
 
 [![CI](https://github.com/mikaeltw/pybind11_cuda_array_interface/actions/workflows/ci.yaml/badge.svg)](https://github.com/mikaeltw/pybind11_cuda_array_interface/actions/workflows/ci.yaml)
 [![Linting](https://github.com/mikaeltw/pybind11_cuda_array_interface/actions/workflows/linting.yaml/badge.svg)](https://github.com/mikaeltw/pybind11_cuda_array_interface/actions/workflows/linting.yaml)
-[![PyPI](https://img.shields.io/pypi/v/pybind11-cuda-array-interface)](https://pypi.org/project/pybind11-cuda-array-interface/)
-[![Python](https://img.shields.io/pypi/pyversions/pybind11-cuda-array-interface)](https://pypi.org/project/pybind11-cuda-array-interface/)
+[![PyPI](https://img.shields.io/pypi/v/pybind11-cuda-array-interface.svg?logo=PyPi)](https://pypi.org/project/pybind11-cuda-array-interface/)
+[![Python](https://img.shields.io/pypi/pyversions/pybind11-cuda-array-interface?logo=Python)](https://pypi.org/project/pybind11-cuda-array-interface/)
+[![License](https://img.shields.io/pypi/l/pybind11-cuda-array-interface.svg)](https://pypi.org/project/pybind11-cuda-array-interface/)
 
 ## Overview
 
@@ -73,7 +74,7 @@ From python you can now use these functions to send and receive arrays implement
 
 **Custom exceptions:**
 
-The plugin defines a number of internal exceptions and a utility function is provided for exporting them to Python via `caiexcp::register_custom_cuda_array_interface_exceptions(module);`. For a complete list please refer to the source code [here](include/pybind11_cuda_array_interface/pybind11_cuda_array_interface.hpp)
+The plugin defines a number of internal exceptions and a utility function is provided for exporting them to Python via `caiexcp::register_custom_cuda_array_interface_exceptions(module);`. For a complete list please refer to the source code [here](include/pybind11_cuda_array_interface/pybind11_cuda_array_interface.hpp).
 
 **cuda_array_t\<T\>:**
 
@@ -223,7 +224,7 @@ python linting/check_python_linting.py
 
 **Clang-tidy & Clang-format:**
 
-No utility command provided but implemented in [.github/workflows/linting.yaml](.github/workflows/linting.yaml)
+No utility command provided but implemented in [.github/workflows/linting.yaml](.github/workflows/linting.yaml).
 
 
 ## Contributing
