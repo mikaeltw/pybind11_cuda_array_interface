@@ -261,7 +261,7 @@ jobs:
   upload_pypi:
     name: Upload pycai to PyPI
     if: github.event_name == 'release' && github.event.action == 'published'
-    needs: [test_pypi_package]
+    needs: [packaging]
     runs-on: ubuntu-latest
 
     steps:
