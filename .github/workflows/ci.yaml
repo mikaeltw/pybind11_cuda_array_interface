@@ -145,7 +145,7 @@ jobs:
           python-version: 3.8
 
       - name: Fetch packaged source build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: pycai_source_build
           path: pycai_source_build
@@ -176,7 +176,7 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Fetch version from packaged source build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: pycai_version
 
@@ -209,7 +209,7 @@ jobs:
           python -m pip install -U pip>=22.3
 
       - name: Fetch install_cupy.py script
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: install_cupy
 
@@ -271,7 +271,7 @@ jobs:
           python-version: "3.x"
 
       - name: Fetch packaged source build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: pycai_source_build
           path: pycai_source_build
