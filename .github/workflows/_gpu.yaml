@@ -1,0 +1,56 @@
+name: _GPU Suite
+
+on:
+  workflow_call:
+    inputs:
+      marker:
+        description: "pytest -m gpu"
+        required: true
+        type: string
+      coverage_suffix:
+        description: "Suffix to distinguish coverage files"
+        required: true
+        type: string
+      gpu_image:
+        description: "Container image (with rag-bencher) to run GPU tests"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  _gpu-suite:
+    name: _GPU Suite
+    if: "github.event_name != 'pull_request' || !startsWith(github.head_ref, 'chore/changelog-release-')"
+    runs-on: [self-hosted, cirun, linux, x64, gpu, gcp]
+    env:
+      CIRUN_TOKEN: ${{ secrets.CIRUN_PYBIND11_CUDA_ARRAY_INTERFACE_API_KEY }}
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run GPU tests inside container
+        env:
+          GCP_ARTIFACT_REGION: ${{ vars.GCP_ARTIFACT_REGION }}
+          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          REPOSITORY: ${{ vars.REPOSITORY }}
+          PACKAGE: ${{ vars.PACKAGE }}
+          IMAGE_VERSION: ${{ vars.IMAGE_VERSION }}
+        run: |
+          sudo --preserve-env=GCP_ARTIFACT_REGION,GCP_PROJECT,REPOSITORY,PACKAGE,IMAGE_VERSION \
+            -u ci-gpu-runner bash -lc '
+              whoami
+              ./scripts/docker/run_gpu_tests.sh
+            '
+
+    #   - name: Save coverage data
+    #     if: always()
+    #     uses: actions/upload-artifact@v4
+    #     with:
+    #       name: cov-${{ inputs.coverage_suffix }}
+    #       path: .coverage.${{ inputs.coverage_suffix }}*
+    #       if-no-files-found: error
+    #       include-hidden-files: true

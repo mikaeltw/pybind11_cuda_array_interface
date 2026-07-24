@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gpu-suite:
+    name: GPU Suite
+    if: >
+      (github.event_name == 'push' && github.actor == 'mikaeltw') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.user.login == 'mikaeltw') ||
+      (github.event_name == 'workflow_dispatch' && github.actor == 'mikaeltw')
+    uses: ./.github/workflows/_gpu.yaml
+    secrets: inherit
+    with:
+      marker: "gpu"
+      coverage_suffix: "gpupy"
+
+#   coverage-collection:
+#     name: Coverage Collection
+#     needs: [unit-and-offline, gpu-suite]
+#     if: >
+#       always() && (
+#         (needs.unit-and-offline.result == 'success' && needs.gpu-suite.result == 'success') ||
+#         (github.event_name == 'pull_request' && startsWith(github.head_ref, 'chore/changelog-release-'))
+#       )
+#     uses: ./.github/workflows/_coveralls.yml
+#     with:
+#       expect: "unit-offline,gpu"
+#     secrets: inherit

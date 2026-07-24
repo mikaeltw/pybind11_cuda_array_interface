@@ -1,0 +1,16 @@
+.git
+.github
+.mypy_cache
+.pytest_cache
+.tox
+.venv
+.uv-cache
+.uv-tools
+.ragbencher_cache
+build
+dist
+htmlcov
+reports
+venv
+*.pyc
+__pycache__
