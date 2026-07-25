@@ -16,8 +16,8 @@ IMAGE_VERSION="$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M)"
 
 IMAGE_REF="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT}/${REPOSITORY}/${PACKAGE}:${IMAGE_VERSION}"
 
-CUDA_IMAGE_DEVEL="${CUDA_IMAGE_DEVEL:-nvidia/cuda:13.3.0-cudnn-devel-ubuntu24.04}"
-CUDA_IMAGE_RUNTIME="${CUDA_IMAGE_RUNTIME:-nvidia/cuda:13.3.0-cudnn-runtime-ubuntu24.04}"
+CUDA_IMAGE_DEVEL="${CUDA_IMAGE_DEVEL:-nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04}"
+CUDA_IMAGE_RUNTIME="${CUDA_IMAGE_RUNTIME:-nvidia/cuda:13.0.3-cudnn-runtime-ubuntu24.04}"
 
 echo "Building GPU test image ${IMAGE_REF} (devel=${CUDA_IMAGE_DEVEL}, runtime=${CUDA_IMAGE_RUNTIME})"
 

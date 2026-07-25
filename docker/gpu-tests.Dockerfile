@@ -1,5 +1,5 @@
-ARG CUDA_IMAGE_DEVEL=nvidia/cuda:13.3.0-cudnn-devel-ubuntu24.04
-ARG CUDA_IMAGE_RUNTIME=nvidia/cuda:13.3.0-cudnn-runtime-ubuntu24.04
+ARG CUDA_IMAGE_DEVEL=nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04
+ARG CUDA_IMAGE_RUNTIME=nvidia/cuda:13.0.3-cudnn-runtime-ubuntu24.04
 
 
 FROM ${CUDA_IMAGE_DEVEL} AS base-build

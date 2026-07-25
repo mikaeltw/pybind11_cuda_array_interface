@@ -96,7 +96,7 @@ Cirun will now boot runners from your preconfigured image, so the VM already has
    GCP_PROJECT="gpu-test-runners" GCP_ARTIFACT_REGION="us-central1" PACKAGE="pybind11-cuda-array-interface-gpu-tests" REPOSITORY="pybind11-cuda-array-interface" ./scripts/docker/build_gpu_test_image.sh
    ```
 
-   By default it builds with a split CUDA base to keep the final image smaller: `nvidia/cuda:13.3.0-cudnn-devel-ubuntu24.04` for the build stage and `nvidia/cuda:13.3.0-cudnn-runtime-ubuntu24.04` for the runtime stage. Override via `CUDA_IMAGE_DEVEL=...` and `CUDA_IMAGE_RUNTIME=...`. The Dockerfile at `docker/gpu-tests.Dockerfile` installs uv, copies the repo and relies on the runtime entrypoint to execute `make setup && make sync && make test-all-gpu` (the same sequence used in `_gpu.yml`). Dependencies download during `make sync` inside the container and land in the mounted cache directories, so subsequent workflow runs reuse them.
+   By default it builds with a split CUDA base to keep the final image smaller: `nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04` for the build stage and `nvidia/cuda:13.0.3-cudnn-runtime-ubuntu24.04` for the runtime stage. Override via `CUDA_IMAGE_DEVEL=...` and `CUDA_IMAGE_RUNTIME=...`. The Dockerfile at `docker/gpu-tests.Dockerfile` installs uv, copies the repo and relies on the runtime entrypoint to execute `make setup && make sync && make test-all-gpu` (the same sequence used in `_gpu.yml`). Dependencies download during `make sync` inside the container and land in the mounted cache directories, so subsequent workflow runs reuse them.
 
 2. Push to GCP Artifact Registry:
 
