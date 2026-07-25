@@ -71,7 +71,7 @@ runners:
     preemptible: true
     region: us-central1-b
 
-    labels: [self-hosted, cirun, linux, x64, gpu, gcp]
+    labels: self-hosted-cirun-linux-x64-gpu-gcp
 
     extra_config:
       project_id: gpu-test-runners
@@ -86,7 +86,7 @@ runners:
             - "https://www.googleapis.com/auth/cloud-platform"
 ```
 
-Cirun will now boot runners from your preconfigured image, so the VM already has Docker plus the correct NVIDIA runtime when the GitHub Actions job starts. Adjust the resource labels to match `.github/workflows/_gpu.yml` (`[self-hosted, cirun, linux, x64, gpu, gcp]`).
+Cirun will now boot runners from your preconfigured image, so the VM already has Docker plus the correct NVIDIA runtime when the GitHub Actions job starts. Adjust the resource labels to match `.github/workflows/_gpu.yml` (`self-hosted-cirun-linux-x64-gpu-gcp`).
 
 ## Build and publish the pybind11-cuda-array-interface GPU test container
 
