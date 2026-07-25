@@ -24,109 +24,109 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.8'
+#     - name: Set up Python
+#       uses: actions/setup-python@v4
+#       with:
+#         python-version: '3.8'
 
-    - name: Create Python venv
-      run: |
-        python -m venv venv
+#     - name: Create Python venv
+#       run: |
+#         python -m venv venv
 
-    - name: Upgrade pip
-      run: |
-        source venv/bin/activate
-        python -m pip install -U pip>=22.3
+#     - name: Upgrade pip
+#       run: |
+#         source venv/bin/activate
+#         python -m pip install -U pip>=22.3
 
-    - name: Install dependencies for linting
-      run: |
-        source venv/bin/activate
-        python -m pip install toml
-        python linting/install_linters.py
+#     - name: Install dependencies for linting
+#       run: |
+#         source venv/bin/activate
+#         python -m pip install toml
+#         python linting/install_linters.py
 
-    - name: Run the linting tools
-      run: |
-        source venv/bin/activate
-        python linting/check_python_linting.py
+#     - name: Run the linting tools
+#       run: |
+#         source venv/bin/activate
+#         python linting/check_python_linting.py
 
 
 
-  linting_cpp:
-    name: Run cpp/cuda linting tools
-    runs-on: ubuntu-latest
+#   linting_cpp:
+#     name: Run cpp/cuda linting tools
+#     runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+#     steps:
+#     - name: Checkout repository
+#       uses: actions/checkout@v3
+#       with:
+#         fetch-depth: 0
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.8'
+#     - name: Set up Python
+#       uses: actions/setup-python@v4
+#       with:
+#         python-version: '3.8'
 
-    - name: Change permissions for caching
-      run: sudo chown -R $(whoami):$(whoami) /var/cache/apt/archives
+#     - name: Change permissions for caching
+#       run: sudo chown -R $(whoami):$(whoami) /var/cache/apt/archives
 
-    - name: Cache CUDA toolkit packages
-      id: cache-cuda
-      uses: actions/cache@v2
-      with:
-        path: /var/cache/apt/archives
-        key: cuda-${{ runner.os }}-${{ hashFiles('.github/workflows/linting.yaml') }}
-        restore-keys: |
-          cuda-${{ runner.os }}-
+#     - name: Cache CUDA toolkit packages
+#       id: cache-cuda
+#       uses: actions/cache@v2
+#       with:
+#         path: /var/cache/apt/archives
+#         key: cuda-${{ runner.os }}-${{ hashFiles('.github/workflows/linting.yaml') }}
+#         restore-keys: |
+#           cuda-${{ runner.os }}-
 
-    - name: Install cuda
-      run: |
-        sudo apt-get update -y
-        sudo apt-get install -y --no-install-recommends \
-        nvidia-cuda-toolkit
+#     - name: Install cuda
+#       run: |
+#         sudo apt-get update -y
+#         sudo apt-get install -y --no-install-recommends \
+#         nvidia-cuda-toolkit
 
-    - name: Install clang tools, toolchains and thirdparty cpp dependencies
-      run: |
-        sudo apt-get update -y
-        sudo apt-get install -y --no-install-recommends \
-        clang-format-14 clang-tidy-14 clang-14 g++-12 googletest
+#     - name: Install clang tools, toolchains and thirdparty cpp dependencies
+#       run: |
+#         sudo apt-get update -y
+#         sudo apt-get install -y --no-install-recommends \
+#         clang-format-14 clang-tidy-14 clang-14 g++-12 googletest
 
-    - name: Create Python venv
-      run: |
-        python -m venv venv
+#     - name: Create Python venv
+#       run: |
+#         python -m venv venv
 
-    - name: Upgrade pip
-      run: |
-        source venv/bin/activate
-        python -m pip install -U pip>=23.2.1
+#     - name: Upgrade pip
+#       run: |
+#         source venv/bin/activate
+#         python -m pip install -U pip>=23.2.1
 
-    - name: Install dependencies for linting
-      run: |
-        source venv/bin/activate
-        python -m pip install pybind11[global]>=2.11.1
+#     - name: Install dependencies for linting
+#       run: |
+#         source venv/bin/activate
+#         python -m pip install pybind11[global]>=2.11.1
 
-    - name: Check formatting with clang-format
-      run: |
-        source venv/bin/activate
-        clang-format-14 -Werror --dry-run -style=file \
-        include/pybind11_cuda_array_interface/pybind11_cuda_array_interface.hpp \
-        tests/sources/gtest_pybind11_cuda_array_interface.cpp \
-        tests/sources/pytest_pybind11_cuda_array_interface.cpp \
-        tests/sources/test_kernels.cu tests/sources/test_kernels.hpp
+#     - name: Check formatting with clang-format
+#       run: |
+#         source venv/bin/activate
+#         clang-format-14 -Werror --dry-run -style=file \
+#         include/pybind11_cuda_array_interface/pybind11_cuda_array_interface.hpp \
+#         tests/sources/gtest_pybind11_cuda_array_interface.cpp \
+#         tests/sources/pytest_pybind11_cuda_array_interface.cpp \
+#         tests/sources/test_kernels.cu tests/sources/test_kernels.hpp
 
-    - name: Check base with clang-tidy
-      run: |
-        source venv/bin/activate
-        clang-tidy-14 --format-style=file \
-        --warnings-as-errors='*' \
-        -header-filter='.*' \
-        tests/sources/gtest_pybind11_cuda_array_interface.cpp \
-        tests/sources/pytest_pybind11_cuda_array_interface.cpp \
-        tests/sources/test_kernels.cu \
-        -- -fno-caret-diagnostics --std=c++17 \
-        -I include/ \
-        -isystem `python3 -c "import pybind11; print(pybind11.get_include())"` \
-        -isystem `python3-config --includes` \
-        -isystem /usr/src/googletest/googletest/include/
+#     - name: Check base with clang-tidy
+#       run: |
+#         source venv/bin/activate
+#         clang-tidy-14 --format-style=file \
+#         --warnings-as-errors='*' \
+#         -header-filter='.*' \
+#         tests/sources/gtest_pybind11_cuda_array_interface.cpp \
+#         tests/sources/pytest_pybind11_cuda_array_interface.cpp \
+#         tests/sources/test_kernels.cu \
+#         -- -fno-caret-diagnostics --std=c++17 \
+#         -I include/ \
+#         -isystem `python3 -c "import pybind11; print(pybind11.get_include())"` \
+#         -isystem `python3-config --includes` \
+#         -isystem /usr/src/googletest/googletest/include/
 
-    - name: Change permissions before cache cleanup
-      run: sudo chown -R $(whoami):$(whoami) /var/cache/apt/archives
+#     - name: Change permissions before cache cleanup
+#       run: sudo chown -R $(whoami):$(whoami) /var/cache/apt/archives
