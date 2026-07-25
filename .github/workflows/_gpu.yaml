@@ -23,7 +23,7 @@ jobs:
   _gpu-suite:
     name: _GPU Suite
     if: "github.event_name != 'pull_request' || !startsWith(github.head_ref, 'chore/changelog-release-')"
-    runs-on: self-hosted-cirun-linux-x64-gpu-gcp
+    runs-on: cirun-self-hosted-linux-x64-gpu-gcp
     env:
       CIRUN_TOKEN: ${{ secrets.CIRUN_PYBIND11_CUDA_ARRAY_INTERFACE_API_KEY }}
     strategy:

@@ -8,7 +8,7 @@ runners:
     region: us-central1-b
 
     labels:
-      - self-hosted-cirun-linux-x64-gpu-gcp
+      - cirun-self-hosted-linux-x64-gpu-gcp
 
     extra_config:
       project_id: gpu-test-runners
