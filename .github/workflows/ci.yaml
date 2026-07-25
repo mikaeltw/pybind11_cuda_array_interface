@@ -18,7 +18,7 @@ on:
 jobs:
   build_and_test:
     name: Build pycai and run tests
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         cuda_version: ['11.6']
