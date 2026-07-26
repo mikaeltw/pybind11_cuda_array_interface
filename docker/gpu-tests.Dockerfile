@@ -2,61 +2,68 @@ ARG CUDA_IMAGE_DEVEL=nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04
 ARG CUDA_IMAGE_RUNTIME=nvidia/cuda:13.0.3-cudnn-runtime-ubuntu24.04
 
 
-FROM ${CUDA_IMAGE_DEVEL} AS base-build
+FROM ${CUDA_IMAGE_DEVEL} AS build
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    UV_CACHE_DIR=/opt/uv-cache \
-    UV_LINK_MODE=copy \
-    UV_PROJECT_ENVIRONMENT=/opt/pybind11_cuda_array_interface/.venv \
-    PATH="/root/.local/bin:${PATH}"
+    VIRTUAL_ENV=/opt/gpu-tests-venv \
+    PATH="/opt/gpu-tests-venv/bin:${PATH}"
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       build-essential \
-      git \
-      curl \
       ca-certificates \
-      pkg-config \
+      cmake \
+      curl \
+      ninja-build \
       python3 \
-      python3-venv \
-      python3-pip \
       python3-dev \
-      make \
-      jq && \
+      python3-pip \
+      python3-venv && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /workspace
+RUN python3 -m venv "${VIRTUAL_ENV}" && \
+    python -m pip install --no-cache-dir --upgrade pip && \
+    python -m pip install --no-cache-dir \
+      "cupy-cuda13x" \
+      "numpy>=1.23" \
+      "pybind11>=3,<4" \
+      "pytest>=7"
 
-FROM base-build AS deps
+WORKDIR /opt/pybind11_cuda_array_interface
+COPY . .
 
-COPY pyproject.toml ./
-# COPY pyproject.toml uv.lock README.md LICENSE Makefile ./
-# COPY src ./src
+# The Cirun runner uses an NVIDIA T4 (compute capability 7.5). Build both test
+# frontends here so the GPU job only has to execute them.
+RUN cmake \
+      -S . \
+      -B /opt/gpu-tests-build \
+      -G Ninja \
+      -DBUILD_GTESTS=ON \
+      -DBUILD_PYTESTS=ON \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_CUDA_ARCHITECTURES=75 \
+      -Dpybind11_DIR="$(python -m pybind11 --cmakedir)" && \
+    cmake --build /opt/gpu-tests-build --parallel
 
-# RUN make setup && make sync && \
-#     uv python install 3.13 && \
-#     uv python install 3.14 && \
-#     uv cache prune --ci
 
 FROM ${CUDA_IMAGE_RUNTIME} AS runtime
 
-ENV UV_CACHE_DIR=/opt/uv-cache \
-    UV_LINK_MODE=copy \
-    UV_PROJECT_ENVIRONMENT=/opt/pybind11_cuda_array_interface/.venv \
-    PATH="/root/.local/bin:${PATH}"
+ENV DEBIAN_FRONTEND=noninteractive \
+    VIRTUAL_ENV=/opt/gpu-tests-venv \
+    PATH="/opt/gpu-tests-venv/bin:${PATH}" \
+    PYTHONPATH=/opt/pybind11_cuda_array_interface/tests/pytest \
+    PYBIND11_CUDA_ARRAY_INTERFACE_DEVICE=gpu
 
-# Minimal runtime packages to run the tests/venv (single layer, aggressive cleanup)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       ca-certificates \
-      curl \
-      make \
-      python3 \
-      python3-venv \
-      python3-setuptools && \
-    rm -rf /var/lib/apt/lists/* /usr/share/doc /usr/share/man /usr/share/info /tmp/* /var/tmp/*
+      libgomp1 \
+      libpython3.12t64 \
+      python3 && \
+    rm -rf /var/lib/apt/lists/*
 
-# COPY --from=deps /root/.local /root/.local
-# COPY --from=deps /opt/pybind11_cuda_array_interface/.venv /opt/pybind11_cuda_array_interface/.venv
+COPY --from=build /opt/gpu-tests-venv /opt/gpu-tests-venv
+COPY --from=build /opt/pybind11_cuda_array_interface /opt/pybind11_cuda_array_interface
 
-ENTRYPOINT ["/bin/bash"]
+WORKDIR /opt/pybind11_cuda_array_interface
+CMD ["python", "-m", "pytest", "/opt/pybind11_cuda_array_interface/tests/pytest"]

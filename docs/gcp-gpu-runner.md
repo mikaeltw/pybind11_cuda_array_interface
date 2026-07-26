@@ -3,7 +3,7 @@
 The GPU job defined in `.github/workflows/_gpu.yml` runs entirely inside a container that has all pybind11-cuda-array-interface dependencies pre-installed. This document explains how to build and store:
 
 1. A GCE VM image that already contains Docker and the NVIDIA Container Toolkit so Cirun can boot a runner quickly.
-2. A GPU-enabled container image that bundles pybind11-cuda-array-interface plus its dev tooling so `_gpu.yml` can run the existing tox workflow inside the container.
+2. A GPU-enabled container image that bundles the compiled test extension, test executables, and Python test dependencies so `_gpu.yaml` only has to execute tests.
 
 ## Prerequisites
 
@@ -90,13 +90,13 @@ Cirun will now boot runners from your preconfigured image, so the VM already has
 
 ## Build and publish the pybind11-cuda-array-interface GPU test container
 
-1. Build the container that runs the tox workflow (Remember to change env vars for your settings):
+1. Build the container that contains the precompiled GPU test suite (remember to change environment variables for your settings):
 
    ```bash
    GCP_PROJECT="gpu-test-runners" GCP_ARTIFACT_REGION="us-central1" PACKAGE="pybind11-cuda-array-interface-gpu-tests" REPOSITORY="pybind11-cuda-array-interface" ./scripts/docker/build_gpu_test_image.sh
    ```
 
-   By default it builds with a split CUDA base to keep the final image smaller: `nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04` for the build stage and `nvidia/cuda:13.0.3-cudnn-runtime-ubuntu24.04` for the runtime stage. Override via `CUDA_IMAGE_DEVEL=...` and `CUDA_IMAGE_RUNTIME=...`. The Dockerfile at `docker/gpu-tests.Dockerfile` installs uv, copies the repo and relies on the runtime entrypoint to execute `make setup && make sync && make test-all-gpu` (the same sequence used in `_gpu.yml`). Dependencies download during `make sync` inside the container and land in the mounted cache directories, so subsequent workflow runs reuse them.
+   By default it uses `nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04` to compile the tests and `nvidia/cuda:13.0.3-cudnn-runtime-ubuntu24.04` for the final image. Override these with `CUDA_IMAGE_DEVEL` and `CUDA_IMAGE_RUNTIME`. The Dockerfile at `docker/gpu-tests.Dockerfile` installs CuPy and pytest, compiles the pytest extension and GoogleTest executable for the T4 runner (`sm_75`), and copies only the prepared environment into the runtime stage. Dependency installation and compilation therefore happen while publishing the image, not on the Cirun runner.
 
 2. Push to GCP Artifact Registry:
 
@@ -119,7 +119,8 @@ The `_gpu.yml` workflow now calls `scripts/docker/run_gpu_tests.sh`, which:
     ```
     as GitHub Actions vars.
 - Runs it with `--gpus all`.
-- Mounts the working directory so re cloning is not necessary.
+- Mounts the checkout at `/workspace` for optional ad-hoc commands. The default test command uses the source and binaries baked into `/opt/pybind11_cuda_array_interface`, so the mount does not hide the precompiled artifacts.
+- Runs the baked pytest GPU suite followed by the baked GoogleTest executable.
 
 You can also use the script locally:
 
@@ -127,7 +128,7 @@ You can also use the script locally:
 GCP_PROJECT="gpu-test-runners" GCP_ARTIFACT_REGION="us-central1" PACKAGE="pybind11-cuda-array-interface-gpu-tests" REPOSITORY="pybind11-cuda-array-interface" IMAGE_VERSION="Your image version tag" ./scripts/docker/run_gpu_tests.sh
 ```
 
-Override the command to run ad-hoc checks (for example, `./scripts/docker/run_gpu_tests.sh bash -lc "pytest tests/gpu -k cache"`).
+Override the command to run ad-hoc checks (for example, `./scripts/docker/run_gpu_tests.sh bash -lc "python -m pytest /opt/pybind11_cuda_array_interface/tests/pytest -k memory"`).
 
 ## Summary of storage locations
 
