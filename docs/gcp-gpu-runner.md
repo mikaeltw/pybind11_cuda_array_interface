@@ -96,7 +96,7 @@ Cirun will now boot runners from your preconfigured image, so the VM already has
    GCP_PROJECT="gpu-test-runners" GCP_ARTIFACT_REGION="us-central1" PACKAGE="pybind11-cuda-array-interface-gpu-tests" REPOSITORY="pybind11-cuda-array-interface" ./scripts/docker/build_gpu_test_image.sh
    ```
 
-   By default it uses `nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04` to compile the tests and `nvidia/cuda:13.0.3-cudnn-runtime-ubuntu24.04` for the final image. Override these with `CUDA_IMAGE_DEVEL` and `CUDA_IMAGE_RUNTIME`. The Dockerfile at `docker/gpu-tests.Dockerfile` installs CuPy and pytest, compiles the pytest extension and GoogleTest executable for the T4 runner (`sm_75`), and copies only the prepared environment into the runtime stage. Dependency installation and compilation therefore happen while publishing the image, not on the Cirun runner.
+   By default it uses `nvidia/cuda:13.0.3-devel-ubuntu24.04` to compile the tests and the small `nvidia/cuda:13.0.3-base-ubuntu24.04` for the final image. cuDNN and CUDA's general-purpose math libraries are not needed by this test suite. Override these images with `CUDA_IMAGE_DEVEL` and `CUDA_IMAGE_RUNTIME`. The Dockerfile at `docker/gpu-tests.Dockerfile` installs CuPy and pytest, compiles the pytest extension and GoogleTest executable for the T4 runner (`sm_75`), and copies the prepared environment, NVRTC, and CUDA's small header tree into the final stage. These files allow CuPy's runtime-generated kernels to compile without including the multi-gigabyte CUDA development or runtime image. Dependency installation and C++/CUDA compilation therefore happen while publishing the image, not on the Cirun runner.
 
 2. Push to GCP Artifact Registry:
 
