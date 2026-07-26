@@ -13,7 +13,7 @@ IMAGE_REF="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT}/${REPOSITORY}/${
 DOCKER_ENTRYPOINT=()
 if [[ $# -eq 0 ]]; then
   DOCKER_ENTRYPOINT=(--entrypoint /bin/bash)
-  COMMAND=(-lc "nvidia-smi")
+  COMMAND=(-lc "python -m pytest /opt/pybind11_cuda_array_interface/tests/pytest && /opt/pybind11_cuda_array_interface/tests/gtest/run_gtest_cai")
 else
   COMMAND=("$@")
 fi

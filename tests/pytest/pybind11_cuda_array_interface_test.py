@@ -25,11 +25,11 @@ from pycai import (
 
 
 class ArrayCapsuleWrapperProtocol(Protocol):
-    def __init__(self, array: cp.ndarray, capsule: Any) -> None:
+    def __init__(self, array: cp.ndarray, capsule: Any) -> None:  # Init method
         ...
 
     @property
-    def array(self) -> cp.ndarray:
+    def array(self) -> cp.ndarray:  # array as a property
         ...
 
     @property
