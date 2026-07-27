@@ -157,10 +157,9 @@ private:
             std::stringstream error_ss;
             error_ss << "Mismatching dtypes. "
                      << "Expected the dtype: " << py::str(expected_dtype).cast<std::string>()
-                     << " corresponding"
-                     << " to a C++ " << typeid(T).name() << " which is not compatible "
-                     << "with the supplied dtype " << py::str(actual_dype).cast<std::string>()
-                     << "\n";
+                     << " corresponding" << " to a C++ " << typeid(T).name()
+                     << " which is not compatible " << "with the supplied dtype "
+                     << py::str(actual_dype).cast<std::string>() << "\n";
             throw caiexcp::DtypeMismatchError(error_ss.str());
         }
     }
