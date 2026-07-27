@@ -241,6 +241,7 @@ run_gcc_check() {
     "${GXX_BIN}" \
       -std=c++17 \
       -fsyntax-only \
+      -fvisibility=hidden \
       -I"${REPOSITORY_ROOT}/include" \
       -isystem "${PYBIND11_INCLUDE}" \
       -isystem "${PYTHON_INCLUDE}" \
