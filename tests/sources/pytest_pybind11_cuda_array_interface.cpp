@@ -10,7 +10,15 @@
 
 #include "test_kernels.hpp"
 
-#include <iostream>
+#include "pybind11/cast.h"
+#include "pybind11/detail/common.h"
+#include "pybind11/pybind11.h"
+
+#include <cuda_runtime_api.h>
+#include <driver_types.h>
+
+#include <cstddef>
+#include <vector>
 
 template <typename T>
 void saxpy(cai::cuda_array_t<T> s_cai, cai::cuda_array_t<T> x_cai, cai::cuda_array_t<T> y_cai,

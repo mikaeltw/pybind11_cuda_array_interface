@@ -7,9 +7,22 @@
 
 #include "pybind11_cuda_array_interface/pybind11_cuda_array_interface.hpp"
 
+#include "pybind11/cast.h"
 #include "pybind11/embed.h"
+#include "pybind11/numpy.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/pytypes.h"
 
 #include "gtest/gtest.h"
+
+#include <cuda_runtime_api.h>
+#include <driver_types.h>
+
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace py = pybind11;
 
@@ -110,10 +123,10 @@ TEST(ValidateTypedPointerTest, DifferentDataTypeTest)
 
 TEST(ValidateTypedPointerTest, MemoryAllocationAndDeallocation)
 {
-    EXPECT_NO_THROW({ cai::cuda_array_t<int> arr({1}); });
+    EXPECT_NO_THROW({ const cai::cuda_array_t<int> arr({1}); });
 
     {
-        cai::cuda_array_t<int> arr({1});
+        const cai::cuda_array_t<int> arr({1});
     }
 
     EXPECT_EQ(cudaGetLastError(), cudaSuccess);
@@ -195,15 +208,15 @@ TEST(ValidateTypestr, ValidTypestr)
 
 TEST(ValidateShape, IsZero)
 {
-    std::vector<size_t> shape = {};
+    const std::vector<size_t> shape = {};
 
     EXPECT_THROW(cai::validate_shape(shape), caiexcp::InvalidShapeError);
 }
 
 TEST(ValidateShape, ContainsZero)
 {
-    std::vector<size_t> shape1 = {5, 3, 0};
-    std::vector<size_t> shape2 = {0, 6, 7, 8};
+    const std::vector<size_t> shape1 = {5, 3, 0};
+    const std::vector<size_t> shape2 = {0, 6, 7, 8};
 
     EXPECT_THROW(cai::validate_shape(shape1), caiexcp::InvalidShapeError);
     EXPECT_THROW(cai::validate_shape(shape2), caiexcp::InvalidShapeError);
@@ -211,8 +224,8 @@ TEST(ValidateShape, ContainsZero)
 
 TEST(ValidateShape, ValidShape)
 {
-    std::vector<size_t> shape1 = {5, 3, 4};
-    std::vector<size_t> shape2 = {2, 6, 7, 8};
+    const std::vector<size_t> shape1 = {5, 3, 4};
+    const std::vector<size_t> shape2 = {2, 6, 7, 8};
 
     EXPECT_NO_THROW(cai::validate_shape(shape1));
     EXPECT_NO_THROW(cai::validate_shape(shape2));
@@ -239,7 +252,7 @@ TEST(ValidateCudaPtr, InvalidCudaPointer)
 
 TEST(ValidateCapsule, InvalidCapsule)
 {
-    py::capsule invalidCapsule;
+    const py::capsule invalidCapsule;
 
     EXPECT_THROW(cai::validate_capsule(invalidCapsule), caiexcp::InvalidCapsuleError);
 }
@@ -247,7 +260,7 @@ TEST(ValidateCapsule, InvalidCapsule)
 TEST(ValidateCapsule, UnexpectedCapsuleName)
 {
     int data = 42;
-    py::capsule namedCapsule(&data, "unexpected_name");
+    const py::capsule namedCapsule(&data, "unexpected_name");
 
     EXPECT_THROW(cai::validate_capsule(namedCapsule), caiexcp::InvalidCapsuleError);
 }
@@ -255,7 +268,7 @@ TEST(ValidateCapsule, UnexpectedCapsuleName)
 TEST(ValidateCapsule, ValidCapsule)
 {
     int data = 42;
-    py::capsule fullyValidCapsule(&data, "cuda_memory_capsule");
+    const py::capsule fullyValidCapsule(&data, "cuda_memory_capsule");
 
     EXPECT_NO_THROW(cai::validate_capsule(fullyValidCapsule));
 }
@@ -303,13 +316,13 @@ TEST(CudaArraySimulatedIntegrationTest, SendAndReceive)
 
     test_module.def("sendandreceive", &cai::send_and_receive_cuda_array_interface<int>);
 
-    py::module cupy = py::module::import("cupy");
-    py::module numpy = py::module::import("numpy");
+    const py::module cupy = py::module::import("cupy");
+    const py::module numpy = py::module::import("numpy");
 
-    py::list lst = py::cast(std::vector<int>({1, 2, 3, 4, 5}));
-    py::object cupy_array = cupy.attr("array")(lst).attr("astype")("int32");
+    const py::list lst = py::cast(std::vector<int>({1, 2, 3, 4, 5}));
+    const py::object cupy_array = cupy.attr("array")(lst).attr("astype")("int32");
 
-    py::object received_cupy_array = test_module.attr("sendandreceive")(cupy_array);
+    const py::object received_cupy_array = test_module.attr("sendandreceive")(cupy_array);
 
     // Check if the returned object has __cuda_array_interface__
     ASSERT_TRUE(py::hasattr(received_cupy_array, "__cuda_array_interface__"));

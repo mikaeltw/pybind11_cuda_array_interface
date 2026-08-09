@@ -29,6 +29,9 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 endif()
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" U_CMAKE_BUILD_TYPE)
+option(COPY_TEST_ARTIFACTS_TO_SOURCE
+       "Copy compiled test artifacts into the source tree"
+       ON)
 
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     project(pybind11_cuda_array_interface-test)
@@ -65,6 +68,8 @@ if(BUILD_GTESTS)
     set(PYBIND11_CUDA_ARRAY_INTERFACE_GTESTS sources/gtest_pybind11_cuda_array_interface.cpp)
 
     add_executable(${EXECNAME} ${PYBIND11_CUDA_ARRAY_INTERFACE_GTESTS})
+    set_target_properties(${EXECNAME} PROPERTIES
+                          RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
     add_dependencies(${EXECNAME} gtest_main)
     target_link_libraries(${EXECNAME} PRIVATE
                 project_options
@@ -78,12 +83,13 @@ if(BUILD_GTESTS)
                                ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR}
                                ${GTEST_INCLUDE_DIRS}
     )
-    add_custom_command(TARGET ${EXECNAME} POST_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                               $<TARGET_FILE:${EXECNAME}>
-                               ${CMAKE_SOURCE_DIR}/tests/gtest/$<TARGET_FILE_NAME:${EXECNAME}>
-    )
-
+    if(COPY_TEST_ARTIFACTS_TO_SOURCE)
+        add_custom_command(TARGET ${EXECNAME} POST_BUILD
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                                   $<TARGET_FILE:${EXECNAME}>
+                                   ${CMAKE_SOURCE_DIR}/tests/gtest/$<TARGET_FILE_NAME:${EXECNAME}>
+        )
+    endif()
 endif()
 
 if(BUILD_PYTESTS)
@@ -104,11 +110,15 @@ if(BUILD_PYTESTS)
     target_include_directories(${MODULENAME} PRIVATE
                                ${PYBIND11_CUDA_ARRAY_INTERFACE_INCLUDE_DIR}
     )
-    set_target_properties(${MODULENAME} PROPERTIES PREFIX "")
-    add_custom_command(TARGET ${MODULENAME} POST_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                               $<TARGET_FILE:${MODULENAME}>
-                               ${CMAKE_SOURCE_DIR}/tests/pytest/$<TARGET_FILE_NAME:${MODULENAME}>
-    )
+    set_target_properties(${MODULENAME} PROPERTIES
+                          PREFIX ""
+                          LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+    if(COPY_TEST_ARTIFACTS_TO_SOURCE)
+        add_custom_command(TARGET ${MODULENAME} POST_BUILD
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                                   $<TARGET_FILE:${MODULENAME}>
+                                   ${CMAKE_SOURCE_DIR}/tests/pytest/$<TARGET_FILE_NAME:${MODULENAME}>
+        )
+    endif()
 
 endif()

@@ -150,17 +150,16 @@ private:
 
     void check_dtype() const
     {
-        py::dtype expected_dtype = py::dtype::of<T>();
-        py::dtype actual_dype(this->typestr);
+        const py::dtype expected_dtype = py::dtype::of<T>();
+        const py::dtype actual_dype(this->typestr);
 
         if (!expected_dtype.is(actual_dype)) {
             std::stringstream error_ss;
             error_ss << "Mismatching dtypes. "
                      << "Expected the dtype: " << py::str(expected_dtype).cast<std::string>()
-                     << " corresponding"
-                     << " to a C++ " << typeid(T).name() << " which is not compatible "
-                     << "with the supplied dtype " << py::str(actual_dype).cast<std::string>()
-                     << "\n";
+                     << " corresponding" << " to a C++ " << typeid(T).name()
+                     << " which is not compatible " << "with the supplied dtype "
+                     << py::str(actual_dype).cast<std::string>() << "\n";
             throw caiexcp::DtypeMismatchError(error_ss.str());
         }
     }
@@ -276,7 +275,7 @@ inline void validate_typestr(const std::string &typestr)
     }
 
     // Check byte size
-    std::string byte_size_str = typestr.substr(2);
+    const std::string byte_size_str = typestr.substr(2);
     try {
         const size_t byte_size = std::stoul(byte_size_str); // convert string to unsigned long
         if (byte_size == 0) {
@@ -358,10 +357,10 @@ public:
                 "Provided Python Object does not implement __cuda_array_interface__");
         }
 
-        py::object interface = obj.attr("__cuda_array_interface__");
+        const py::object interface = obj.attr("__cuda_array_interface__");
         auto iface_dict = interface.cast<py::dict>();
 
-        std::vector<std::string> mandatory_fields = {"data", "shape", "typestr", "version"};
+        const std::vector<std::string> mandatory_fields = {"data", "shape", "typestr", "version"};
 
         for (const auto &field : mandatory_fields) {
             if (!iface_dict.contains(field)) {
@@ -381,7 +380,7 @@ public:
         // Extract the shape and check if all elements are unsigned integers
         auto shape_tuple = iface_dict["shape"].cast<py::tuple>();
         // Extract the shape key from the cuda array dict
-        for (py::handle s_elem : shape_tuple) {
+        for (const py::handle s_elem : shape_tuple) {
             if (py::isinstance<py::int_>(s_elem) && s_elem.cast<ssize_t>() >= 0) {
                 value.shape.emplace_back(s_elem.cast<size_t>());
             } else {
@@ -454,7 +453,7 @@ public:
         // Create an instance of a Python object that can hold arbitrary attributes
         py::object caio{py::none()};
         try {
-            py::object types = py::module::import("types");
+            const py::object types = py::module::import("types");
             caio = types.attr("SimpleNamespace")();
         } catch (const std::exception &e) {
             throw caiexcp::SimpleNamespaceError(

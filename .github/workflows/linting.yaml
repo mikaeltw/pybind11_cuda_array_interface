@@ -50,83 +50,73 @@ jobs:
         python linting/check_python_linting.py
 
 
-# This needs modernization to use clang 18 and g++ 13
-#   linting_cpp:
-#     name: Run cpp/cuda linting tools
-#     runs-on: ubuntu-latest
 
-#     steps:
-#     - name: Checkout repository
-#       uses: actions/checkout@v3
-#       with:
-#         fetch-depth: 0
+  linting_cpp:
+    name: C++ / CUDA static analysis (Clang 18, GCC 13)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
 
-#     - name: Set up Python
-#       uses: actions/setup-python@v4
-#       with:
-#         python-version: '3.8'
+    permissions:
+      contents: read
 
-#     - name: Change permissions for caching
-#       run: sudo chown -R $(whoami):$(whoami) /var/cache/apt/archives
+    concurrency:
+      group: cpp-lint-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
 
-#     - name: Cache CUDA toolkit packages
-#       id: cache-cuda
-#       uses: actions/cache@v2
-#       with:
-#         path: /var/cache/apt/archives
-#         key: cuda-${{ runner.os }}-${{ hashFiles('.github/workflows/linting.yaml') }}
-#         restore-keys: |
-#           cuda-${{ runner.os }}-
+    defaults:
+      run:
+        shell: bash
 
-#     - name: Install cuda
-#       run: |
-#         sudo apt-get update -y
-#         sudo apt-get install -y --no-install-recommends \
-#         nvidia-cuda-toolkit
+    env:
+      CLANG_VERSION: "18"
+      GCC_VERSION: "13"
+      PYTHON_VERSION: "3.12"
+      CUDA_PATH: /usr/lib/cuda
+      CUDA_ARCH: sm_70
+      DEBIAN_FRONTEND: noninteractive
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
 
-#     - name: Install clang tools, toolchains and thirdparty cpp dependencies
-#       run: |
-#         sudo apt-get update -y
-#         sudo apt-get install -y --no-install-recommends \
-#         clang-format-14 clang-tidy-14 clang-14 g++-12 googletest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.1.0
+        with:
+          persist-credentials: false
 
-#     - name: Create Python venv
-#       run: |
-#         python -m venv venv
+      - name: Set up Python
+        uses: actions/setup-python@v6.3.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-#     - name: Upgrade pip
-#       run: |
-#         source venv/bin/activate
-#         python -m pip install -U pip>=23.2.1
+      - name: Install native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            "clang-${CLANG_VERSION}" \
+            "clang-format-${CLANG_VERSION}" \
+            "clang-tidy-${CLANG_VERSION}" \
+            "g++-${GCC_VERSION}" \
+            libgtest-dev \
+            nvidia-cuda-toolkit
 
-#     - name: Install dependencies for linting
-#       run: |
-#         source venv/bin/activate
-#         python -m pip install pybind11[global]>=2.11.1
+          sudo rm -rf /var/lib/apt/lists/*
 
-#     - name: Check formatting with clang-format
-#       run: |
-#         source venv/bin/activate
-#         clang-format-14 -Werror --dry-run -style=file \
-#         include/pybind11_cuda_array_interface/pybind11_cuda_array_interface.hpp \
-#         tests/sources/gtest_pybind11_cuda_array_interface.cpp \
-#         tests/sources/pytest_pybind11_cuda_array_interface.cpp \
-#         tests/sources/test_kernels.cu tests/sources/test_kernels.hpp
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "pybind11>=3.0.0"
 
-#     - name: Check base with clang-tidy
-#       run: |
-#         source venv/bin/activate
-#         clang-tidy-14 --format-style=file \
-#         --warnings-as-errors='*' \
-#         -header-filter='.*' \
-#         tests/sources/gtest_pybind11_cuda_array_interface.cpp \
-#         tests/sources/pytest_pybind11_cuda_array_interface.cpp \
-#         tests/sources/test_kernels.cu \
-#         -- -fno-caret-diagnostics --std=c++17 \
-#         -I include/ \
-#         -isystem `python3 -c "import pybind11; print(pybind11.get_include())"` \
-#         -isystem `python3-config --includes` \
-#         -isystem /usr/src/googletest/googletest/include/
+      - name: Verify lint environment
+        run: ./scripts/lint-cpp.sh verify
 
-#     - name: Change permissions before cache cleanup
-#       run: sudo chown -R $(whoami):$(whoami) /var/cache/apt/archives
+      - parallel:
+        - name: Check C++ and CUDA formatting
+          run: ./scripts/lint-cpp.sh format
+
+        - name: Validate C++ with GCC
+          run: ./scripts/lint-cpp.sh gcc
+
+        - name: Run Clang-Tidy on C++
+          run: ./scripts/lint-cpp.sh tidy-cpp
+
+        - name: Run Clang-Tidy on CUDA
+          run: ./scripts/lint-cpp.sh tidy-cuda

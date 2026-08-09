@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       gpu_image:
-        description: "Container image (with rag-bencher) to run GPU tests"
+        description: "Optional full reference of the manually published GPU test toolchain image"
         required: false
         type: string
 
@@ -39,8 +39,9 @@ jobs:
           REPOSITORY: ${{ vars.REPOSITORY }}
           PACKAGE: ${{ vars.PACKAGE }}
           IMAGE_VERSION: ${{ vars.IMAGE_VERSION }}
+          GPU_IMAGE_REF: ${{ inputs.gpu_image }}
         run: |
-          sudo --preserve-env=GCP_ARTIFACT_REGION,GCP_PROJECT,REPOSITORY,PACKAGE,IMAGE_VERSION \
+          sudo --preserve-env=GCP_ARTIFACT_REGION,GCP_PROJECT,REPOSITORY,PACKAGE,IMAGE_VERSION,GPU_IMAGE_REF \
             -u ci-gpu-runner bash -lc '
               whoami
               ./scripts/docker/run_gpu_tests.sh
