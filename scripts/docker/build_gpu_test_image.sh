@@ -16,14 +16,14 @@ IMAGE_VERSION="$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M)"
 
 IMAGE_REF="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT}/${REPOSITORY}/${PACKAGE}:${IMAGE_VERSION}"
 
-CUDA_IMAGE_DEVEL="${CUDA_IMAGE_DEVEL:-nvidia/cuda:13.0.3-devel-ubuntu24.04}"
+CUDA_IMAGE_BASE="${CUDA_IMAGE_BASE:-nvidia/cuda:13.0.3-base-ubuntu24.04}"
 
-echo "Building GPU test toolchain image ${IMAGE_REF} (devel=${CUDA_IMAGE_DEVEL})"
+echo "Building GPU test toolchain image ${IMAGE_REF} (base=${CUDA_IMAGE_BASE})"
 
 docker build \
   -f docker/gpu-tests.Dockerfile \
   --no-cache \
-  --build-arg "CUDA_IMAGE_DEVEL=${CUDA_IMAGE_DEVEL}" \
+  --build-arg "CUDA_IMAGE_BASE=${CUDA_IMAGE_BASE}" \
   -t "${IMAGE_REF}" \
   .
 
