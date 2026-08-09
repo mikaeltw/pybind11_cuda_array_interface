@@ -33,6 +33,7 @@ CUDA_SOURCES=()
 
 PYBIND11_INCLUDE=""
 PYTHON_INCLUDE=""
+GCC_INSTALL_DIR=""
 
 log() {
   printf '[lint-cpp] %s\n' "$*"
@@ -103,6 +104,19 @@ verify_gcc_version() {
   fi
 
   log "$("${GXX_BIN}" --version | head -n 1)"
+}
+
+load_gcc_configuration() {
+  local libgcc_path
+
+  verify_gcc_version
+  libgcc_path="$("${GXX_BIN}" -print-libgcc-file-name)"
+  GCC_INSTALL_DIR="$(dirname -- "${libgcc_path}")"
+
+  [[ -d "${GCC_INSTALL_DIR}" ]] ||
+    fail "GCC installation directory does not exist: ${GCC_INSTALL_DIR}"
+
+  log "GCC installation: ${GCC_INSTALL_DIR}"
 }
 
 load_python_configuration() {
@@ -253,6 +267,7 @@ run_gcc_check() {
 
 run_clang_tidy_cpp() {
   verify_clang_version "${CLANG_TIDY_BIN}"
+  load_gcc_configuration
   load_python_configuration
   collect_files
 
@@ -272,7 +287,7 @@ run_clang_tidy_cpp() {
     -- \
     -std=c++17 \
     -fno-caret-diagnostics \
-    --gcc-toolchain=/usr \
+    "--gcc-install-dir=${GCC_INSTALL_DIR}" \
     -stdlib=libstdc++ \
     -I"${REPOSITORY_ROOT}/include" \
     -isystem "${PYBIND11_INCLUDE}" \
@@ -286,11 +301,13 @@ verify_cuda_arch() {
     "${CLANGXX_BIN}" \
       -x cuda \
       --cuda-device-only \
+      "--gcc-install-dir=${GCC_INSTALL_DIR}" \
       "--cuda-path=${CUDA_PATH}" \
       "--cuda-gpu-arch=${CUDA_ARCH}" \
       -fsyntax-only \
       - >/dev/null; then
-    fail "${CLANGXX_BIN} does not support CUDA architecture ${CUDA_ARCH}"
+    fail \
+      "${CLANGXX_BIN} failed CUDA device validation for ${CUDA_ARCH} using GCC ${GCC_VERSION}"
   fi
 }
 
@@ -308,6 +325,7 @@ run_clang_tidy_cuda() {
     fail "CUDA toolkit directory does not exist: ${CUDA_PATH}"
 
   verify_clang_version "${CLANGXX_BIN}"
+  load_gcc_configuration
   verify_cuda_arch
 
   group_start "Clang-Tidy ${CLANG_VERSION}: CUDA"
@@ -322,7 +340,7 @@ run_clang_tidy_cuda() {
     -x cuda \
     -std=c++17 \
     -fno-caret-diagnostics \
-    --gcc-toolchain=/usr \
+    "--gcc-install-dir=${GCC_INSTALL_DIR}" \
     -stdlib=libstdc++ \
     "--cuda-path=${CUDA_PATH}" \
     "--cuda-gpu-arch=${CUDA_ARCH}" \
