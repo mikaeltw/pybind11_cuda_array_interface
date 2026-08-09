@@ -266,6 +266,7 @@ run_clang_tidy_cpp() {
   "${CLANG_TIDY_BIN}" \
     --format-style=file \
     --warnings-as-errors='*' \
+    --quiet \
     --header-filter='.*' \
     "${CPP_SOURCES[@]}" \
     -- \
@@ -278,6 +279,19 @@ run_clang_tidy_cpp() {
     -isystem "${PYTHON_INCLUDE}"
 
   group_end
+}
+
+verify_cuda_arch() {
+  if ! printf '' |
+    "${CLANGXX_BIN}" \
+      -x cuda \
+      --cuda-device-only \
+      "--cuda-path=${CUDA_PATH}" \
+      "--cuda-gpu-arch=${CUDA_ARCH}" \
+      -fsyntax-only \
+      - >/dev/null; then
+    fail "${CLANGXX_BIN} does not support CUDA architecture ${CUDA_ARCH}"
+  fi
 }
 
 run_clang_tidy_cuda() {
@@ -293,11 +307,15 @@ run_clang_tidy_cuda() {
   [[ -d "${CUDA_PATH}" ]] ||
     fail "CUDA toolkit directory does not exist: ${CUDA_PATH}"
 
+  verify_clang_version "${CLANGXX_BIN}"
+  verify_cuda_arch
+
   group_start "Clang-Tidy ${CLANG_VERSION}: CUDA"
 
   "${CLANG_TIDY_BIN}" \
     --format-style=file \
     --warnings-as-errors='*' \
+    --quiet \
     --header-filter='.*' \
     "${CUDA_SOURCES[@]}" \
     -- \

@@ -105,5 +105,18 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install "pybind11>=3.0.0"
 
-      - name: Run C++ and CUDA linting
-        run: ./scripts/lint-cpp.sh all
+      - name: Verify lint environment
+        run: ./scripts/lint-cpp.sh verify
+
+      - parallel:
+        - name: Check C++ and CUDA formatting
+          run: ./scripts/lint-cpp.sh format
+
+        - name: Validate C++ with GCC
+          run: ./scripts/lint-cpp.sh gcc
+
+        - name: Run Clang-Tidy on C++
+          run: ./scripts/lint-cpp.sh tidy-cpp
+
+        - name: Run Clang-Tidy on CUDA
+          run: ./scripts/lint-cpp.sh tidy-cuda
