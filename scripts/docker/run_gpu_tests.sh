@@ -7,13 +7,14 @@ GCP_PROJECT="${GCP_PROJECT:-gpu-test-runners}"
 REPOSITORY="${REPOSITORY:-pybind11-cuda-array-interface}"
 PACKAGE="${PACKAGE:-pybind11-cuda-array-interface-gpu-tests}"
 IMAGE_VERSION="${IMAGE_VERSION:-latest}"
+CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES:-75}"
 
-IMAGE_REF="${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT}/${REPOSITORY}/${PACKAGE}:${IMAGE_VERSION}"
+IMAGE_REF="${GPU_IMAGE_REF:-${GCP_ARTIFACT_REGION}-docker.pkg.dev/${GCP_PROJECT}/${REPOSITORY}/${PACKAGE}:${IMAGE_VERSION}}"
 
 DOCKER_ENTRYPOINT=()
 if [[ $# -eq 0 ]]; then
-  DOCKER_ENTRYPOINT=(--entrypoint /bin/bash)
-  COMMAND=(-lc "python -m pytest /opt/pybind11_cuda_array_interface/tests/pytest && /opt/pybind11_cuda_array_interface/tests/gtest/run_gtest_cai")
+  DOCKER_ENTRYPOINT=(--entrypoint /workspace/scripts/docker/run_gpu_tests_in_container.sh)
+  COMMAND=()
 else
   COMMAND=("$@")
 fi
@@ -28,8 +29,9 @@ gcloud auth configure-docker ${GCP_ARTIFACT_REGION}-docker.pkg.dev --quiet
 docker pull "${IMAGE_REF}" || echo "Pull failed (probably have not pushed yet). Using local image."
 
 docker run --rm --gpus all \
-  -v "$PWD":/workspace \
+  -v "$PWD":/workspace:ro \
   -w /workspace \
+  -e "CUDA_ARCHITECTURES=${CUDA_ARCHITECTURES}" \
   -e PYBIND11_CUDA_ARRAY_INTERFACE_DEVICE=gpu \
   "${DOCKER_ENTRYPOINT[@]}" \
   "${IMAGE_REF}" \
